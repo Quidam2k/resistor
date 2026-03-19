@@ -1,5 +1,7 @@
 # Resistor
 
+**Not just your own ResistBot — your own political war room.**
+
 A civic engagement force multiplier powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
 Resistor is a civic engagement force multiplier. It turns one person with 20 minutes a week into a constituent whose letters read like they came from a staffer — citing specific bill numbers, referencing voting records, building on prior correspondence, and arriving at the strategically right moment.
