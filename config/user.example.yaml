@@ -1,0 +1,8 @@
+# Your personal information — copy this to user.yaml and fill in your details
+# user.yaml is gitignored so your info stays private
+name: Your Name
+address: 1234 Main Street
+city: Your City
+state: OR
+zip: "97401"
+email: you@example.com

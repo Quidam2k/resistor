@@ -1,0 +1,46 @@
+# Personal/sensitive config
+config/user.yaml
+.env
+
+# User data (personal correspondence, research, session notes)
+data/letters/
+data/sessions/
+data/responses/
+data/voting_records/
+data/bills/
+data/research-*.md
+data/background.md
+data/*.pdf
+*.db
+*.db-journal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Screenshots (temp holding area)
+screengrab/
+
+# Claude Code / Playwright local state
+.claude/
+.playwright-mcp/
+
+# Temp files
+send_faxes.py

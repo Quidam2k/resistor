@@ -1,0 +1,77 @@
+# Your elected representatives
+# Replace these with your own — look yours up at:
+#   Federal: congress.gov/members/find-your-member
+#   State: your state legislature's website
+#   City: your city's website
+#
+# This example shows an Oregon setup. Adapt the structure for your state.
+
+federal:
+  senators:
+    - name: Ron Wyden
+      party: D
+      title: US Senator
+      contact_url: https://www.wyden.senate.gov/contact
+      phone: "202-224-5244"
+      fax_dc: "202-228-2717"
+      fax_portland: "503-230-1128"
+      dc_address: "221 Dirksen Senate Office Bldg, Washington, DC 20510"
+      term_ends: 2029
+
+    - name: Jeff Merkley
+      party: D
+      title: US Senator
+      contact_url: https://www.merkley.senate.gov/contact
+      phone: "202-224-3753"
+      fax_dc: "202-228-3997"
+      email: "senator@merkley.senate.gov"  # Rare for federal reps to have direct email
+      dc_address: "531 Hart Senate Office Bldg, Washington, DC 20510"
+      term_ends: 2027
+
+  house:
+    - name: Val Hoyle
+      party: D
+      title: US Representative
+      district: "OR-4"
+      contact_url: https://hoyle.house.gov/contact/email-val
+      phone: "202-225-6416"
+      dc_address: "1620 Longworth House Office Bldg, Washington, DC 20515"
+
+state:
+  senate:
+    - name: James Manning Jr.
+      party: D
+      title: Oregon State Senator
+      district: "SD-7"
+      contact_url: https://www.oregonlegislature.gov/manning
+      email: "Sen.JamesManning@oregonlegislature.gov"
+      phone: "503-986-1707"
+      address: "900 Court St NE, Salem, OR 97301"
+
+  house:
+    - name: Julie Fahey
+      party: D
+      title: Oregon State Representative
+      district: "HD-14"
+      contact_url: https://www.oregonlegislature.gov/fahey
+      email: "Rep.JulieFahey@oregonlegislature.gov"
+      phone: "503-986-1414"
+      address: "900 Court St NE, H-271, Salem, OR 97301"
+
+city:
+  # Look up your city council ward/district from your address
+  # Example for Eugene: https://www.eugene-or.gov/537/Mayor-and-City-Council
+  council_url: ""
+  notes: "TODO: Look up your ward to identify your specific councilor"
+
+excluded:
+  # Representatives you do NOT want to contact
+  - President
+  - Vice President
+  - Presidential appointees
+
+optional:
+  # Supreme Court — physical mail only
+  supreme_court:
+    address: "Supreme Court of the United States, 1 First Street NE, Washington, DC 20543"
+    notes: "Physical mail only. Consider for strategically timed messages on specific cases."
