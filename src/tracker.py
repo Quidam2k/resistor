@@ -28,6 +28,25 @@ RESPONSE_SENDERS = [
     "hoyle.house.gov",
 ]
 
+# Subject-line fingerprints of GENUINE casework replies, learned from the
+# archive (2023-2024). Sender alone does NOT separate replies from newsletters:
+# Merkley sends both his mass newsletters AND his substantive topic-specific
+# replies from the SAME address (Senator_Merkley@merkley.senate.gov). The real
+# signal is the subject:
+#   - Merkley substantive: "In response to your message about <topic>",
+#     "Responding to your message ...", "Regarding your message about <topic>".
+#   - Wyden: a generic form receipt titled "Thank You for Contacting Me"
+#     ("your individualized response may be delayed") -- proof of receipt, NOT
+#     a position. Log it as acknowledged, don't quote it as his view.
+# Everything else from these domains ("Jeff Around Oregon", fundraising, event
+# RSVPs, breaking-news blasts) is a newsletter -- skip it.
+RESPONSE_SUBJECT_HINTS = [
+    "in response to your",
+    "responding to your message",
+    "regarding your message",
+    "thank you for contacting",
+]
+
 
 # ---------------------------------------------------------------------------
 # A. Outcome auto-check
@@ -119,21 +138,30 @@ def check_open_asks(update: bool = True) -> list[dict]:
 # B. Response capture (Claude-driven via the Gmail connector)
 # ---------------------------------------------------------------------------
 
-def response_search_queries() -> list[str]:
+def response_search_queries(since: str = None) -> list[str]:
     """Gmail search queries Claude should run at session start.
 
-    For each returned query, run the Gmail connector's search_threads; for each
-    genuine reply, call db.record_response(letter_id, representative,
-    received_date, body) against the matching sent letter (match by rep + the
-    nearest prior topic).
+    Returns two queries, both narrowed by the subject fingerprints of real
+    casework replies (RESPONSE_SUBJECT_HINTS) so newsletters are excluded up
+    front -- a plain `from:<domain>` sweep drowns real replies in ~200
+    mailing-list blasts (learned the hard way 2026-08-18):
+      [0] the tight query: replies matching a known subject fingerprint.
+      [1] a wider safety net: everything from the domains, minus obvious
+          newsletter noise, in case a rep uses a new subject format.
 
-    NOTE: these domains also send high-volume newsletters/mailing-list blasts
-    (e.g. Senator_Merkley@merkley.senate.gov, addressed to the list, not a
-    reply). Those are NOT responses. Claude must filter to genuine casework
-    replies to our letters -- scope with `newer_than:` since the last session
-    and skip anything that reads as a mass mailing.
+    Pass `since` (YYYY/MM/DD, e.g. the last session date) to scope both to
+    new mail. For each genuine reply, call db.record_response(letter_id,
+    representative, received_date, body) against the matching sent letter
+    (match by rep + the nearest prior topic). Wyden's "Thank You for
+    Contacting Me" is only a receipt -- log it, but don't quote it as a view.
     """
-    return [f"from:{domain}" for domain in RESPONSE_SENDERS]
+    senders = " OR ".join(RESPONSE_SENDERS)
+    subjects = " OR ".join(f'subject:"{hint}"' for hint in RESPONSE_SUBJECT_HINTS)
+    date = f" after:{since}" if since else ""
+    tight = f"from:({senders}) AND ({subjects}){date}"
+    wide = (f"from:({senders}) -subject:newsletter -subject:town "
+            f"-subject:RSVP{date}")
+    return [tight, wide]
 
 
 # ---------------------------------------------------------------------------
