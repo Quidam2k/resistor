@@ -415,6 +415,32 @@ def get_all_responses() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def search_responses(representative: str = None, keyword: str = None) -> list[dict]:
+    """Find logged replies by rep and/or topic keyword, newest first.
+
+    Use this at draft time to pull a rep's prior stated position on a topic --
+    including back-imported replies that aren't linked to a letter row (so
+    get_prior_correspondence, which joins on letter_id, won't surface them).
+    keyword matches against both the reply body and the notes (which carry the
+    imported topic), case-insensitively.
+    """
+    clauses, params = [], []
+    if representative:
+        clauses.append("representative = ?")
+        params.append(representative)
+    if keyword:
+        clauses.append("(body LIKE ? OR notes LIKE ?)")
+        params.extend([f"%{keyword}%", f"%{keyword}%"])
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    conn = get_connection()
+    rows = conn.execute(
+        f"SELECT * FROM responses {where} ORDER BY received_date DESC, id DESC",
+        params
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 if __name__ == "__main__":
     init_db()
     print(f"Database initialized at {DB_PATH}")
