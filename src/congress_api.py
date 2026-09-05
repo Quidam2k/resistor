@@ -1,4 +1,22 @@
-"""Fetch voting records and bill text from Congress.gov API and GovTrack."""
+"""Fetch voting records and bill text from Congress.gov API and GovTrack.
+
+Data-source reality (audited 2026-09-05, verified live against the APIs):
+
+- Congress.gov has NO per-member votes endpoint. The old
+  ``member/{bioguide}/votes`` path this module used returned 404
+  ("Unknown resource") for both Senate and House members. Congress.gov
+  roll-call data is exposed only via the House-only ``house-vote``
+  endpoints (2023+); there is no Senate equivalent (Senate roll calls
+  live in senate.gov XML). Bill text/metadata endpoints still work.
+- GovTrack's ``api/v2`` still answers, but GovTrack deprecated its bulk
+  data/API in 2017 and directs users to the ``unitedstates/congress``
+  (CC0) scrapers. It is therefore our current-but-unsupported source for
+  member votes across both chambers. Vendoring ``unitedstates/congress``
+  as the durable replacement is a captured roadmap item (see ROADMAP.md).
+
+Run ``python -m src.congress_api healthcheck`` before trusting vote data
+so a session never again silently relies on a dead endpoint.
+"""
 
 import json
 import time
@@ -60,50 +78,24 @@ def _govtrack_get(endpoint: str, params: dict = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Member voting records via Congress.gov
+# Member voting records via Congress.gov  --  REMOVED (endpoint does not exist)
 # ---------------------------------------------------------------------------
-
-def fetch_member_votes(member_name: str, congress: int = 119,
-                       offset: int = 0) -> list[dict]:
-    """Fetch roll call votes for a member from Congress.gov.
-
-    Args:
-        member_name: e.g. "Ron Wyden"
-        congress: Congress number (119 = 2025-2027)
-        offset: Pagination offset
-
-    Returns:
-        List of vote records
-    """
-    info = MEMBER_IDS.get(member_name)
-    if not info:
-        raise ValueError(f"Unknown member: {member_name}. Known: {list(MEMBER_IDS.keys())}")
-
-    bioguide = info["bioguide"]
-    endpoint = f"member/{bioguide}/votes"
-    data = _congress_get(endpoint, {"offset": offset})
-    return data.get("votes", [])
-
-
-def fetch_all_member_votes(member_name: str, congress: int = 119) -> list[dict]:
-    """Fetch ALL votes for a member, paginating through results."""
-    all_votes = []
-    offset = 0
-
-    while True:
-        votes = fetch_member_votes(member_name, congress, offset)
-        if not votes:
-            break
-        all_votes.extend(votes)
-        print(f"  Fetched {len(all_votes)} votes for {member_name}...")
-        offset += 250
-        time.sleep(0.5)  # Be nice to the API
-
-    return all_votes
+#
+# There used to be fetch_member_votes()/fetch_all_member_votes() here that
+# called ``member/{bioguide}/votes``. That endpoint does NOT exist on
+# Congress.gov (verified 2026-09-05: 404 "Unknown resource" for both Wyden
+# and Hoyle), so the code never worked and silently fell through to GovTrack
+# every time. It has been removed rather than left as a dead trap.
+#
+# Congress.gov roll-call data is available only via the House-only
+# ``house-vote`` endpoints. If/when we want House votes straight from
+# Congress.gov, fetch ``house-vote/{congress}/{session}`` and its
+# ``/members`` sub-resource. Senate votes are not available there at all.
+# Until we vendor unitedstates/congress, GovTrack (below) is the source.
 
 
 # ---------------------------------------------------------------------------
-# Member voting records via GovTrack (backup / richer data)
+# Member voting records via GovTrack (current source; deprecated upstream)
 # ---------------------------------------------------------------------------
 
 def fetch_govtrack_votes(member_name: str, congress: int = 119,
@@ -235,18 +227,14 @@ def download_all_voting_records(congress: int = 119):
     for member_name in MEMBER_IDS:
         print(f"\nFetching votes for {member_name}...")
 
-        # Try Congress.gov first
+        # Congress.gov has no per-member votes endpoint, so GovTrack is the
+        # only working source for both chambers today. (See module docstring.)
         try:
-            votes = fetch_all_member_votes(member_name, congress)
-            source = "congress_gov"
+            votes = fetch_govtrack_votes(member_name, congress)
+            source = "govtrack"
         except Exception as e:
-            print(f"  Congress.gov failed ({e}), trying GovTrack...")
-            try:
-                votes = fetch_govtrack_votes(member_name, congress)
-                source = "govtrack"
-            except Exception as e2:
-                print(f"  GovTrack also failed: {e2}")
-                continue
+            print(f"  GovTrack failed: {e}")
+            continue
 
         # Save to file
         safe_name = member_name.lower().replace(" ", "_").replace(".", "")
@@ -331,6 +319,58 @@ def download_key_bills():
         time.sleep(0.5)
 
 
+# ---------------------------------------------------------------------------
+# Upstream healthcheck
+# ---------------------------------------------------------------------------
+
+def healthcheck(congress: int = 119) -> dict:
+    """Verify each upstream data source actually returns data.
+
+    Run this before a session trusts vote/bill data. Each source that
+    silently rots (a 404 endpoint, a deprecated API pulled offline) is the
+    exact failure that let the tool ship a dead Congress.gov vote path.
+
+    Returns a dict mapping source name -> {"ok": bool, "detail": str}.
+    Also prints a human-readable summary.
+    """
+    results: dict[str, dict] = {}
+
+    # Congress.gov bill endpoint (used for bill text/metadata).
+    try:
+        info = fetch_bill_info("s", 4746, congress)
+        ok = bool(info.get("bill"))
+        results["congress_gov_bill"] = {
+            "ok": ok,
+            "detail": "bill endpoint returned data" if ok
+            else "bill endpoint returned empty payload",
+        }
+    except Exception as e:
+        results["congress_gov_bill"] = {"ok": False, "detail": f"error: {e}"}
+
+    # GovTrack member votes (current source for roll-call votes).
+    try:
+        sample = next(iter(GOVTRACK_IDS.values()))
+        data = _govtrack_get("vote_voter", {"person": sample, "limit": 1})
+        count = data.get("meta", {}).get("total_count", 0)
+        ok = count > 0
+        results["govtrack_votes"] = {
+            "ok": ok,
+            "detail": f"{count} vote rows available"
+            if ok else "no vote rows returned",
+        }
+    except Exception as e:
+        results["govtrack_votes"] = {"ok": False, "detail": f"error: {e}"}
+
+    print("\nUpstream healthcheck:")
+    for name, r in results.items():
+        mark = "OK " if r["ok"] else "DEAD"
+        print(f"  [{mark}] {name}: {r['detail']}")
+    if not all(r["ok"] for r in results.values()):
+        print("  WARNING: at least one source is down — vote/bill data may be "
+              "stale or incomplete. Do not trust it silently.")
+    return results
+
+
 if __name__ == "__main__":
     import sys
 
@@ -338,9 +378,12 @@ if __name__ == "__main__":
         download_key_bills()
     elif len(sys.argv) > 1 and sys.argv[1] == "votes":
         download_all_voting_records()
+    elif len(sys.argv) > 1 and sys.argv[1] == "healthcheck":
+        healthcheck()
     else:
         print("Usage:")
-        print("  python -m src.congress_api votes   -- Download voting records")
-        print("  python -m src.congress_api bills   -- Download key bill texts")
+        print("  python -m src.congress_api healthcheck  -- Verify upstreams are live")
+        print("  python -m src.congress_api votes        -- Download voting records (GovTrack)")
+        print("  python -m src.congress_api bills         -- Download key bill texts")
         print()
         print("Requires CONGRESS_API_KEY in .env (free at api.congress.gov/sign-up)")

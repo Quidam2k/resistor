@@ -22,8 +22,8 @@ Claude researches headlines, checks for new congressional votes, and identifies 
 
 The research from the [Congressional Management Foundation](https://www.congressfoundation.org/) is clear:
 
-- A **personalized letter is worth 1,000 form letters** to congressional staffers
-- **Fewer than 50** personalized contacts can change an undecided member's position in 70% of offices
+- **~90% of congressional staff** say an individualized letter or email has "a lot" of positive influence on an undecided member — versus only **3%** who say that about a form message ([CMF, *Communicating with Congress*, 2011](https://www.congressfoundation.org/))
+- **~90% of offices** say **fewer than 100** personalized contacts on an issue is enough to get the office to consider taking the requested action ([CMF, *Citizen-Centric Advocacy*, 2017](https://www.congressfoundation.org/))
 - The medium doesn't matter (email, fax, postal mail) — **what matters is that it's original, specific, and from a real constituent**
 - **Referencing prior correspondence** and **citing specific bill numbers** signals sustained engagement that staffers can't ignore
 
@@ -35,7 +35,7 @@ Resistor automates the tedious parts (research, delivery, record-keeping) so you
 
 ### What You'll Need
 
-1. **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — Anthropic's CLI tool. This is how you talk to Claude. Requires an Anthropic account ($20/month for Pro, which includes Claude Code).
+1. **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — Anthropic's CLI tool. This is how you talk to Claude. Requires a paid Claude plan, which includes Claude Code; see current plans and prices at [claude.com/pricing](https://claude.com/pricing).
 
 2. **Python 3.10 or newer** — [Download here](https://www.python.org/downloads/) if you don't have it. To check: open a terminal and type `python --version`.
 
@@ -86,7 +86,9 @@ python -m src.db
 python -m src.congress_api votes
 python -m src.congress_api bills
 ```
-This pulls every vote your reps have cast in the current Congress (usually 500-700+ each) and the full text of major bills. Takes a couple minutes.
+This pulls your reps' recent roll-call votes and the full text of major bills. Takes a couple minutes.
+
+> **Data-source note:** Congress.gov has no per-member votes endpoint (its roll-call data is House-only), so vote records currently come from GovTrack, which still serves data but deprecated its API upstream. Run `python -m src.congress_api healthcheck` first to confirm each source is live before you trust the data. Vendoring the public-domain [`unitedstates/congress`](https://github.com/unitedstates/congress) scrapers as the durable source is on the roadmap.
 
 **7. Start your first session:**
 ```bash
@@ -122,7 +124,7 @@ data/                      # All user data (gitignored)
 src/
   config.py                # Configuration loader
   db.py                    # SQLite database
-  congress_api.py          # Congress.gov + GovTrack APIs
+  congress_api.py          # Bill text via Congress.gov; votes via GovTrack (House votes also on Congress.gov; no Senate endpoint). Has a healthcheck.
   letter.py                # Letter formatting and storage
   import_votes.py          # Vote record importer
   delivery/
@@ -148,10 +150,10 @@ Most federal reps can be reached by fax. Most state reps have direct email. Betw
 No. Once set up, you just talk to Claude in plain English. The setup involves copying files and pasting API keys — the instructions above walk you through every step.
 
 **How much does it cost?**
-- Claude Code: $20/month (Anthropic Pro)
+- Claude Code: a paid Claude plan (current prices at [claude.com/pricing](https://claude.com/pricing)) — includes Claude Code
 - Faxes: ~$0.03 each (a session sending 4 faxes costs $0.12)
 - Congress.gov API: Free
-- Total: About $20/month, almost entirely the Claude subscription you may already have
+- Total: almost entirely the Claude subscription you may already have
 
 **Won't my reps think I'm a bot?**
 No. Every letter is original — composed in conversation between you and Claude, informed by your actual opinions and priorities. These read like thoughtful constituent mail because that's what they are. You approve every word before it sends.
