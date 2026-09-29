@@ -7,7 +7,10 @@ import yaml
 
 PROJECT_ROOT = Path(__file__).parent.parent
 CONFIG_DIR = PROJECT_ROOT / "config"
-DATA_DIR = PROJECT_ROOT / "data"
+# RESIST_DATA_DIR points the DB, letters and sessions at a scratch copy
+# (rehearsals and tests); unset for real use. (#1295)
+DATA_DIR = Path(os.environ["RESIST_DATA_DIR"]) if os.environ.get(
+    "RESIST_DATA_DIR") else PROJECT_ROOT / "data"
 
 
 def load_yaml(path: Path) -> dict:
