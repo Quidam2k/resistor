@@ -1,0 +1,17 @@
+{
+ "committeeMeeting": {
+  "chamber": "House",
+  "committees": [
+   {
+    "systemCode": "hsii13",
+    "url": "https://api.congress.gov/v3/committee/house/hsii13?format=json"
+   }
+  ],
+  "congress": 119,
+  "date": "2026-10-21T14:00:00Z",
+  "eventId": "900001",
+  "meetingStatus": "Scheduled",
+  "title": "Legislative hearing on H.R. 0000, a hand-built fixture bill",
+  "type": "Hearing"
+ }
+}

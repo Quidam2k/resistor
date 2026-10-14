@@ -35,14 +35,14 @@ GOVTRACK_API_BASE = "https://www.govtrack.us/api/v2"
 MEMBER_IDS = {
     "Ron Wyden": {"bioguide": "W000779", "chamber": "senate"},
     "Jeff Merkley": {"bioguide": "M001176", "chamber": "senate"},
-    "Val Hoyle": {"bioguide": "H001096", "chamber": "house"},
+    "Val Hoyle": {"bioguide": "H001094", "chamber": "house"},
 }
 
 # GovTrack person IDs
 GOVTRACK_IDS = {
     "Ron Wyden": 300100,
     "Jeff Merkley": 412325,
-    "Val Hoyle": 456858,
+    "Val Hoyle": 456932,
 }
 
 

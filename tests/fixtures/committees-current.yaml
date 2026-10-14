@@ -1,0 +1,22 @@
+- type: house
+  name: House Committee on Natural Resources
+  thomas_id: HSII
+  subcommittees:
+  - name: Water, Wildlife and Fisheries
+    thomas_id: '13'
+- type: house
+  name: House Committee on Transportation and Infrastructure
+  thomas_id: HSPW
+  subcommittees: []
+- type: senate
+  name: Senate Committee on Appropriations
+  thomas_id: SSAP
+  subcommittees:
+  - name: Department of Interior, Environment, and Related Agencies
+    thomas_id: '17'
+- type: senate
+  name: Senate Committee on Finance
+  thomas_id: SSFI
+  subcommittees:
+  - name: Taxation and IRS Oversight
+    thomas_id: '11'

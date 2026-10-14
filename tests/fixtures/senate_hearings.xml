@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><css_meetings_scheduled>
+  <!-- Hand-built in the live feed's schema (the live feed was empty on
+       2026-10-13, pre-election recess). cmte_code format is SSxx00 for a
+       full committee, SSxxNN for a subcommittee. -->
+  <meeting>
+    <cmte_code>SSFI00</cmte_code>
+    <committee>Finance</committee>
+    <type>Hearing</type>
+    <date>20-OCT-2026</date>
+    <date_iso_8601>2026-10-20</date_iso_8601>
+    <time>10:00:00</time>
+    <room>SD-215</room>
+    <matter>Hearings to examine the nomination of a Deputy Secretary of the Treasury.</matter>
+  </meeting>
+  <meeting>
+    <cmte_code>SSAP17</cmte_code>
+    <committee>Appropriations</committee>
+    <type>Markup</type>
+    <date>15-OCT-2026</date>
+    <date_iso_8601>2026-10-15</date_iso_8601>
+    <time>14:30:00</time>
+    <room>SD-138</room>
+    <matter>Business meeting to mark up the Interior, Environment appropriations bill.</matter>
+  </meeting>
+  <meeting>
+    <cmte_code>SSAP17</cmte_code>
+    <committee>Appropriations</committee>
+    <type>Hearing</type>
+    <date>01-OCT-2026</date>
+    <date_iso_8601>2026-10-01</date_iso_8601>
+    <time>10:00:00</time>
+    <room>SD-138</room>
+    <matter>A past hearing that must be filtered out.</matter>
+  </meeting>
+  <meeting>
+    <cmte_code/>
+    <committee/>
+    <type/>
+    <date>13-OCT-2026</date>
+    <date_iso_8601>2026-10-13</date_iso_8601>
+    <day_of_week>Today</day_of_week>
+    <time>18:00:00</time>
+    <room/>
+    <matter>No committee hearings scheduled</matter>
+  </meeting>
+</css_meetings_scheduled>

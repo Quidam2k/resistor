@@ -1,0 +1,78 @@
+{
+ "data": [
+  {
+   "type": "documents",
+   "id": "DRBC-2026-0166-0001",
+   "attributes": {
+    "agencyId": "DRBC",
+    "objectId": "09000064b962e865",
+    "frDocNum": "2026-20480",
+    "documentType": "Proposed Rule",
+    "withdrawn": false,
+    "highlightedContent": "",
+    "commentEndDate": "2026-12-05T04:59:59Z",
+    "commentStartDate": "2026-10-06T04:00:00Z",
+    "lastModifiedDate": "2026-10-06T17:03:20Z",
+    "openForComment": true,
+    "withinCommentPeriod": true,
+    "postedDate": "2026-10-06T04:00:00Z",
+    "title": "Basin Regulations: Water Code",
+    "docketId": null,
+    "subtype": null,
+    "allowLateComments": false
+   }
+  },
+  {
+   "type": "documents",
+   "id": "EPA_FRDOC_0001-33165",
+   "attributes": {
+    "agencyId": "EPA",
+    "objectId": "09000064b95b69bc",
+    "frDocNum": "2026-19500",
+    "documentType": "Proposed Rule",
+    "withdrawn": false,
+    "highlightedContent": "",
+    "commentEndDate": "2026-10-24T03:59:59Z",
+    "commentStartDate": "2026-09-23T04:00:00Z",
+    "lastModifiedDate": "2026-09-24T09:00:26Z",
+    "openForComment": true,
+    "withinCommentPeriod": true,
+    "postedDate": "2026-09-23T04:00:00Z",
+    "title": "Public Water System Supervision Program Revision for the State of Arkansas",
+    "docketId": "EPA_FRDOC_0001",
+    "subtype": null,
+    "allowLateComments": false
+   }
+  },
+  {
+   "type": "documents",
+   "id": "EPA-HQ-OW-2026-6965-0001",
+   "attributes": {
+    "agencyId": "EPA",
+    "objectId": "09000064b94cc98b",
+    "frDocNum": "2026-18134",
+    "documentType": "Proposed Rule",
+    "withdrawn": false,
+    "highlightedContent": "",
+    "commentEndDate": "2026-10-20T03:59:59Z",
+    "commentStartDate": "2026-09-04T04:00:00Z",
+    "lastModifiedDate": "2026-10-13T09:00:46Z",
+    "openForComment": true,
+    "withinCommentPeriod": true,
+    "postedDate": "2026-09-04T04:00:00Z",
+    "title": "Updates to the National Pollutant Discharge Elimination System Definitions and Exclusions",
+    "docketId": "EPA-HQ-OW-2026-6965",
+    "subtype": null,
+    "allowLateComments": false
+   }
+  }
+ ],
+ "meta": {
+  "hasNextPage": true,
+  "numberOfElements": 5,
+  "pageNumber": 1,
+  "pageSize": 5,
+  "totalElements": 45,
+  "totalPages": 9
+ }
+}

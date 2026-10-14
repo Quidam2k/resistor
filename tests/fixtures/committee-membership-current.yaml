@@ -1,0 +1,48 @@
+HSII:
+- bioguide: H001094
+  name: Val T. Hoyle
+  party: minority
+  rank: 5
+- bioguide: H001096
+  name: Harriet M. Hageman
+  party: majority
+  rank: 15
+HSII13:
+- bioguide: H001096
+  name: Harriet M. Hageman
+  party: majority
+  rank: 1
+  title: Chair
+- bioguide: H001094
+  name: Val T. Hoyle
+  party: minority
+  rank: 1
+  title: Ranking Member
+HSPW:
+- bioguide: H001094
+  name: Val T. Hoyle
+  party: minority
+  rank: 20
+SSAP:
+- bioguide: M001176
+  name: Jeff Merkley
+  party: minority
+  rank: 5
+SSAP17:
+- bioguide: M001176
+  name: Jeff Merkley
+  party: minority
+  rank: 1
+  title: Ranking Member
+SSFI:
+- bioguide: W000779
+  name: Ron Wyden
+  party: minority
+  rank: 1
+  title: Ranking Member
+SSFI11:
+- bioguide: W000779
+  name: Ron Wyden
+  party: minority
+  rank: 9
+  title: Ex Officio

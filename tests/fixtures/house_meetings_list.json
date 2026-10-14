@@ -1,0 +1,18 @@
+{
+ "committeeMeetings": [
+  {
+   "chamber": "House",
+   "congress": 119,
+   "eventId": "900001",
+   "updateDate": "2026-10-13T15:00:00Z",
+   "url": "https://api.congress.gov/v3/committee-meeting/119/house/900001?format=json"
+  },
+  {
+   "chamber": "House",
+   "congress": 119,
+   "eventId": "119538",
+   "updateDate": "2026-10-13T15:41:24Z",
+   "url": "https://api.congress.gov/v3/committee-meeting/119/house/119538?format=json"
+  }
+ ]
+}
