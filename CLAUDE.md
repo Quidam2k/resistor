@@ -83,6 +83,7 @@ Route opportunistically — use whatever channel is fastest and most automatable
 - **No claims about Todd's feelings, reactions, presence, or continuous actions** (#8364) — never write "I can't stop thinking about it", "heartbroken", "I keep...", "ever since...", "I was there/attended/marched" unless Todd wrote that exact sentence himself. The interpreter lint blocks these; his own sentences pass via `draft --todd-wrote "<exact sentence>"`.
 - **Don't recount the public record** (#8364) — name the event ("the Bend school shooting"); no death tolls, ages, or blow-by-blow. Staffers already know.
 - **Be succinct** (#8364) — Todd reads every letter himself; aim for ~200 words.
+- **Multi-recipient batches: one shared body + one personal paragraph each** (#8419) — identical shared paragraphs in every letter, plus ONE genuinely member-specific paragraph per rep (their committee, cosponsor status, past vote or statement, and their ask); greeting is per letter. Build the review card with `python -m src.review_card --ids A,B,C` (shows shared text once, verifies byte-for-byte reassembly; `--attach` adds approve buttons).
 
 ## Important Behavioral Notes
 
