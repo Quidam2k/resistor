@@ -61,7 +61,7 @@ def _congress_get(endpoint: str, params: dict = None) -> dict:
     params.setdefault("limit", 250)
 
     url = f"{CONGRESS_API_BASE}/{endpoint}"
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=60)  # no timeout hung a fetch for an hour
     response.raise_for_status()
     return response.json()
 

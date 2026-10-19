@@ -170,6 +170,10 @@ def _get_with_backoff(endpoint: str, params: dict = None, tries: int = 5) -> dic
         try:
             time.sleep(PACE_SECONDS)
             return _congress_get(endpoint, dict(params or {}))
+        except (requests.Timeout, requests.ConnectionError):
+            if attempt == tries - 1:
+                raise
+            time.sleep(30 * 2 ** attempt)
         except requests.HTTPError as e:
             code = getattr(e.response, "status_code", 0)
             if (code != 429 and code < 500) or attempt == tries - 1:
@@ -199,6 +203,7 @@ def fetch_house_votes(rep: str, congress: int = 119) -> list[dict]:
                     f"house-vote/{congress}/{session}/{v['rollCallNumber']}/members",
                     {"limit": 500})["houseRollCallVoteMemberVotes"]
                 rows.extend(house_vote_rows(rep, bioguide, members, session))
+                print(f"session {session} roll {v['rollCallNumber']}: {len(rows)} rows", flush=True)
             offset += len(votes)
             if not votes or not page.get("pagination", {}).get("next"):
                 break
