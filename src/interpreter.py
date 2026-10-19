@@ -37,6 +37,19 @@ PER_GROUP = 3            # keep the spoken menu short
 REDRAFT_WINDOW_DAYS = 60
 BILL_RE = re.compile(r"\b(S|H\.?\s?R|S\.?\s?J\.?\s?Res|H\.?\s?J\.?\s?Res)\.?\s?(\d+)\b", re.I)
 
+# #8364: never assert Todd's feelings, continuous actions, or presence unless he
+# wrote that exact sentence himself (passed via draft --todd-wrote).
+EMOTION_RE = re.compile(r"\b(" + "|".join([
+    r"(can'?t|cannot|couldn'?t) stop thinking", r"(have not|haven'?t) been able to stop",
+    r"(have not|haven'?t) stopped", r"lost sleep", r"heartbroken", r"heartbreaking",
+    r"devastat\w*", r"haunt\w*", r"gutted", r"horrified", r"sickened", r"shocked",
+    r"my heart", r"I (am|was|feel|felt) (so )?(angry|furious|terrified|scared|sad|afraid)",
+    r"ever since", r"I keep", r"I'?ve been \w+ing", r"I have been \w+ing", r"every day I",
+    r"I was there", r"I attended", r"I marched",
+]) + r")\b", re.I)
+SENTENCE_RE = re.compile(r"[^.!?\n]+[.!?]?")
+TODD_HEADER = "**Todd-authored:** "
+
 
 def _query(sql: str, params=()) -> list[dict]:
     conn = db.get_connection()
@@ -202,11 +215,23 @@ def cmd_pick(args):
 # draft
 # ---------------------------------------------------------------------------
 
-def lint_letter(body: str, item: dict) -> tuple[list[str], list[str]]:
-    """Return (errors, warnings). Errors block the draft."""
+def lint_letter(body: str, item: dict,
+                todd_wrote: list[str] = ()) -> tuple[list[str], list[str]]:
+    """Return (errors, warnings). Errors block the draft.
+
+    todd_wrote: exact sentences Todd wrote himself; only those are exempt
+    from the emotion/presence check.
+    """
     errors, warnings = [], []
     if "\u2014" in body or "\u2013" in body:
         errors.append("contains an em/en dash (letters must not read as AI-written)")
+    exempt = {s.strip() for s in todd_wrote}
+    for sentence in SENTENCE_RE.findall(body):
+        m = EMOTION_RE.search(sentence)
+        if m and sentence.strip() not in exempt:
+            errors.append(f"asserts Todd's feelings/actions/presence ('{m.group(0)}') "
+                          f"in: {sentence.strip()!r}; cut it unless Todd wrote it "
+                          "(draft --todd-wrote \"<exact sentence>\")")
     user = load_user()
     if user["name"] not in body:
         errors.append(f"constituent name '{user['name']}' missing")
@@ -227,7 +252,8 @@ def cmd_draft(args) -> Path | None:
         raise SystemExit("Needs --recipient for this action")
     body = Path(args.body_file).read_text(encoding="utf-8").strip()
     topic = args.topic or item["topic"]
-    errors, warnings = lint_letter(body, item)
+    todd_wrote = args.todd_wrote or []
+    errors, warnings = lint_letter(body, item, todd_wrote)
     for w in warnings:
         print(f"  warn: {w}")
     if errors:
@@ -237,9 +263,10 @@ def cmd_draft(args) -> Path | None:
         return None
     channel = args.channel or get_delivery_info(recipient).get("channel", "unknown")
     path = write_letter_markdown(recipient, topic, body, channel, status="draft")
+    extra = "".join(f"{TODD_HEADER}{s.strip()}\n" for s in todd_wrote)
     text = path.read_text(encoding="utf-8").replace(
         "**Status:** draft\n",
-        f"**Status:** draft\n**Sources:** {', '.join(item['sources'])}\n", 1)
+        f"**Status:** draft\n**Sources:** {', '.join(item['sources'])}\n{extra}", 1)
     path.write_text(text, encoding="utf-8")
     print(f"DRAFT written: {path}")
     print(f"Read it to Todd. When he's happy: python -m src.interpreter queue \"{path}\"")
@@ -252,10 +279,13 @@ def cmd_draft(args) -> Path | None:
 
 def cmd_queue(args) -> int:
     path = Path(args.md)
-    first = path.read_text(encoding="utf-8").split("\n", 1)[0]
-    recipient = first.removeprefix("# Letter to ").strip()
+    raw = path.read_text(encoding="utf-8")
+    recipient = raw.split("\n", 1)[0].removeprefix("# Letter to ").strip()
+    header = raw.split("\n---\n", 1)[0]
+    todd_wrote = [ln[len(TODD_HEADER):] for ln in header.splitlines()
+                  if ln.startswith(TODD_HEADER)]
     body = parse_letter_markdown(path)["body"]
-    errors, _ = lint_letter(body, {})
+    errors, _ = lint_letter(body, {}, todd_wrote)
     if errors:
         raise SystemExit(f"Refusing to queue: {'; '.join(errors)}")
     letter_id = queue_letter_from_markdown(str(path), recipient)
@@ -342,6 +372,9 @@ def main(argv=None):
     p = sub.add_parser("draft"); p.add_argument("n", type=int)
     p.add_argument("--body-file", required=True); p.add_argument("--recipient")
     p.add_argument("--topic")
+    p.add_argument("--todd-wrote", action="append", metavar="SENTENCE",
+                   help="exact sentence Todd wrote himself (exempt from the "
+                        "feelings/presence lint); repeatable")
     p.add_argument("--channel", choices=["fax", "email", "mail", "web_form"],
                    help="override the rep's default channel (e.g. Hoyle by mail)")
     p = sub.add_parser("queue"); p.add_argument("md")

@@ -109,6 +109,51 @@ def test_lint_blocks_em_dash_and_missing_constituent(tmp_path):
     assert not any("6589" in w for w in warnings)  # H.R. 6589 == HR.6589
 
 
+@pytest.mark.parametrize("claim", [
+    "I have not been able to stop thinking about it.",
+    "I am heartbroken.",
+    "I keep coming back to this.",
+    "Ever since then I have written weekly.",
+    "I was there on Saturday.",
+    "I marched to City Hall.",
+])
+def test_lint_blocks_feelings_continuous_and_presence_claims(claim):
+    errors, _ = interpreter.lint_letter(_body(claim), {"bills": ["HR.6589"]})
+    assert any("feelings/actions/presence" in e for e in errors), claim
+
+
+def test_lint_exempts_only_todds_exact_sentence():
+    item = {"bills": ["HR.6589"]}
+    mine = "I am heartbroken."
+    assert not interpreter.lint_letter(_body(mine), item, [mine])[0]
+    # Anything broader than his exact sentence stays blocked.
+    errors, _ = interpreter.lint_letter(_body("I am heartbroken. I keep at it."),
+                                        item, [mine])
+    assert any("I keep" in e for e in errors)
+    assert interpreter.lint_letter(_body("I am heartbroken."), item,
+                                   ["heartbroken"])[0]
+    assert not interpreter.lint_letter(_body("I support the people who turned out."),
+                                       item)[0]
+
+
+def test_queue_relint_honors_todd_authored_header(recorder, tmp_path):
+    interpreter.main(["actions"])
+    mine = "I am heartbroken."
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(_body(mine), encoding="utf-8")
+    args = ["draft", "1", "--recipient", "Val Hoyle", "--channel", "fax",
+            "--body-file", str(body_file)]
+    assert interpreter.main(args) is None  # blocked without the override
+    md = interpreter.main(args + ["--todd-wrote", mine])
+    assert f"**Todd-authored:** {mine}" in md.read_text(encoding="utf-8")
+    letter_id = interpreter.main(["queue", str(md)])
+    assert db.get_letter_by_id(letter_id)["status"] == "pending_approval"
+    conn = db.get_connection()
+    conn.execute("DELETE FROM letters WHERE id=?", (letter_id,))
+    conn.commit()
+    conn.close()
+
+
 def test_full_loop_sends_nothing_live(recorder, tmp_path):
     interpreter.main(["actions"])
     body_file = tmp_path / "body.txt"

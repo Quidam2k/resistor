@@ -80,6 +80,9 @@ Route opportunistically — use whatever channel is fastest and most automatable
 - **Reference prior correspondence** — "In my letter of [date], I wrote about X. Your office responded that Y. I'm following up because Z." This kind of continuity is rare and gets attention.
 - **Be specific** — reference bill numbers, specific actions, specific asks
 - **Assertive but respectful tone** — passionate is fine, abusive is counterproductive
+- **No claims about Todd's feelings, reactions, presence, or continuous actions** (#8364) — never write "I can't stop thinking about it", "heartbroken", "I keep...", "ever since...", "I was there/attended/marched" unless Todd wrote that exact sentence himself. The interpreter lint blocks these; his own sentences pass via `draft --todd-wrote "<exact sentence>"`.
+- **Don't recount the public record** (#8364) — name the event ("the Bend school shooting"); no death tolls, ages, or blow-by-blow. Staffers already know.
+- **Be succinct** (#8364) — Todd reads every letter himself; aim for ~200 words.
 
 ## Important Behavioral Notes
 
