@@ -38,7 +38,8 @@ def _text_to_html(text: str) -> str:
         html_parts.append(f"<p>{lines}</p>")
     body = "\n".join(html_parts)
     return (
-        '<html><body style="font-family: Times New Roman, serif; '
+        '<html><head><meta charset="utf-8"></head>'
+        '<body style="font-family: Times New Roman, serif; '
         'font-size: 12pt; margin: 1in;">\n'
         f'{body}\n'
         '</body></html>'

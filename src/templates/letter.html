@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ letter.recipient }} — {{ letter.topic }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('index') }}">&larr; back to queue</a>
+<div class="card detail">
+  <div class="card-head">
+    <span class="recipient">{{ letter.recipient }}</span>
+    <span class="badge badge-{{ letter.channel }}">{{ letter.channel }}</span>
+    <span class="cost">{{ letter.cost_display }}</span>
+    <span class="status status-{{ letter.status }}">{{ letter.status }}</span>
+  </div>
+  <div class="topic">{{ letter.topic }}</div>
+  <div class="destination">→ {{ letter.destination }}</div>
+
+  {% if letter.lob_thumbnail_url %}
+  <h3>Printed page preview (Lob test render)</h3>
+  <img class="thumbnail" src="{{ letter.lob_thumbnail_url }}" alt="Letter thumbnail">
+  {% endif %}
+
+  <h3>Full text</h3>
+  <pre class="letter-body">{{ letter.body }}</pre>
+
+  {% if letter.status == 'pending_approval' %}
+  <div class="actions" data-letter-id="{{ letter.id }}">
+    <button class="btn btn-approve" id="approve-btn">Approve &amp; Send</button>
+    <button class="btn btn-reject" id="reject-btn">Reject…</button>
+    <div id="action-status"></div>
+  </div>
+  {% elif letter.delivery_result %}
+  <h3>Delivery result</h3>
+  <pre class="result">{{ letter.delivery_result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  {% if letter.rejection_note %}
+  <h3>Rejection note</h3>
+  <p class="rejection-note">{{ letter.rejection_note }}</p>
+  {% endif %}
+</div>
+{% endblock %}

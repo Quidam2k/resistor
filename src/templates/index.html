@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Queue — Resistor{% endblock %}
+{% block content %}
+<h2>Pending approval ({{ letters|length }})</h2>
+{% if not letters %}
+<p class="empty">Nothing waiting. Claude will queue letters here after your next session.</p>
+{% endif %}
+{% for letter in letters %}
+<div class="card">
+  <div class="card-head">
+    <a class="recipient" href="{{ url_for('letter_detail', letter_id=letter.id) }}">{{ letter.recipient }}</a>
+    <span class="badge badge-{{ letter.channel }}">{{ letter.channel }}</span>
+    <span class="cost">{{ letter.cost_display }}</span>
+  </div>
+  <div class="topic">{{ letter.topic }}</div>
+  <div class="destination">→ {{ letter.destination }}</div>
+  <div class="preview">{{ letter.body[:220] }}…</div>
+  <a class="btn btn-view" href="{{ url_for('letter_detail', letter_id=letter.id) }}">Review &amp; decide</a>
+</div>
+{% endfor %}
+{% endblock %}

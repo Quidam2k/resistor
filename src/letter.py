@@ -81,6 +81,68 @@ def save_letter_markdown(recipient_name: str, topic: str, body: str,
     return filepath
 
 
+def write_letter_markdown(recipient_name: str, topic: str, body: str,
+                          channel: str, status: str = "draft") -> Path:
+    """Write a letter markdown file WITHOUT touching the database.
+
+    Same file conventions as save_letter_markdown; used by the outbox,
+    which manages its own DB row.
+    """
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    safe_topic = topic.lower().replace(" ", "-")[:40]
+    safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
+    filename = f"{date_str}-{safe_recipient}-{safe_topic}.md"
+
+    filepath = LETTERS_DIR / filename
+    os.makedirs(LETTERS_DIR, exist_ok=True)
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(f"# Letter to {recipient_name}\n\n")
+        f.write(f"**Topic:** {topic}\n")
+        f.write(f"**Date:** {date_str}\n")
+        f.write(f"**Channel:** {channel}\n")
+        f.write(f"**Status:** {status}\n\n")
+        f.write("---\n\n")
+        f.write(body)
+
+    return filepath
+
+
+def update_markdown_status(md_path, status: str):
+    """Rewrite the **Status:** header line in a letter markdown file.
+
+    Silently does nothing if the file is missing or has no Status line —
+    the DB is the source of truth; the md header is a courtesy mirror.
+    """
+    path = Path(md_path)
+    if not path.is_absolute():
+        path = LETTERS_DIR.parent.parent / path  # relative to project root
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line.startswith("**Status:**"):
+            lines[i] = f"**Status:** {status}"
+            path.write_text("\n".join(lines), encoding="utf-8")
+            return
+
+
+def parse_letter_markdown(md_path) -> dict:
+    """Parse a letter md file into headers + body (text below the first ---)."""
+    path = Path(md_path)
+    text = path.read_text(encoding="utf-8")
+    header_part, sep, body = text.partition("\n---\n")
+    if not sep:
+        raise ValueError(f"No '---' separator in {md_path}")
+    headers = {}
+    for line in header_part.split("\n"):
+        if line.startswith("**") and ":**" in line:
+            key, _, value = line[2:].partition(":**")
+            headers[key.strip().lower()] = value.strip()
+    return {"headers": headers, "body": body.strip()}
+
+
 def get_context_for_letter(recipient_name: str, topic: str = None) -> str:
     """Build context string from prior correspondence for composing a follow-up.
 
