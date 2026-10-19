@@ -144,6 +144,8 @@ src/
 
 Most federal reps can be reached by fax. Most state reps have direct email. Between those two channels, you'll cover almost everyone.
 
+**Approval web UI (`python -m src.webui`) must stay localhost-only.** It binds `127.0.0.1` and its Approve button has no login of its own and really sends faxes/mail on your accounts, so never bind it to `0.0.0.0` or expose it to a network; reach it remotely only through an authenticated proxy you control.
+
 ## Frequently Asked Questions
 
 **Do I need to know how to code?**
