@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}History — Resistor{% endblock %}
+{% block content %}
+<h2>Approval history</h2>
+{% if not letters %}
+<p class="empty">No letters have passed through the gate yet.</p>
+{% endif %}
+<table class="history">
+  <tr><th>Date</th><th>Recipient</th><th>Topic</th><th>Channel</th><th>Status</th><th>Cost</th></tr>
+  {% for letter in letters %}
+  <tr>
+    <td>{{ (letter.sent_at or letter.approved_at or letter.rejected_at or letter.created_at or '')[:10] }}</td>
+    <td><a href="{{ url_for('letter_detail', letter_id=letter.id) }}">{{ letter.recipient }}</a></td>
+    <td>{{ letter.topic }}</td>
+    <td><span class="badge badge-{{ letter.channel }}">{{ letter.channel }}</span></td>
+    <td><span class="status status-{{ letter.status }}">{{ letter.status }}</span></td>
+    <td>{{ letter.cost_display }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

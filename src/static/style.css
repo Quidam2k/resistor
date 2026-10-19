@@ -1,0 +1,88 @@
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  margin: 0; background: #f4f4f0; color: #222;
+}
+header {
+  background: #1a1a2e; color: #fff; padding: 0.8rem 1.5rem;
+  display: flex; align-items: center; gap: 2rem;
+}
+header h1 { font-size: 1.1rem; margin: 0; }
+nav a { color: #ccd; margin-right: 1rem; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #fff; }
+main { max-width: 780px; margin: 1.5rem auto; padding: 0 1rem; }
+
+.dry-run-banner {
+  background: #b45309; color: #fff; text-align: center;
+  padding: 0.4rem; font-weight: 700;
+}
+
+.card {
+  background: #fff; border: 1px solid #ddd; border-radius: 8px;
+  padding: 1rem 1.2rem; margin: 1rem 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-head { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.recipient { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; text-decoration: none; }
+.topic { font-weight: 600; margin: 0.3rem 0; }
+.destination { color: #666; font-size: 0.9rem; }
+.preview { color: #555; font-size: 0.9rem; margin: 0.6rem 0; white-space: pre-line; }
+.cost { margin-left: auto; font-weight: 700; color: #444; }
+
+.badge {
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  padding: 0.15rem 0.5rem; border-radius: 10px; color: #fff;
+}
+.badge-fax { background: #2563eb; }
+.badge-email { background: #059669; }
+.badge-mail { background: #7c3aed; }
+.badge-web_form { background: #d97706; }
+
+.status {
+  font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+.status-pending_approval { background: #fef3c7; color: #92400e; }
+.status-approved { background: #dbeafe; color: #1e40af; }
+.status-sent { background: #d1fae5; color: #065f46; }
+.status-failed { background: #fee2e2; color: #991b1b; }
+.status-rejected { background: #e5e7eb; color: #374151; }
+
+.letter-body {
+  white-space: pre-wrap; font-family: Georgia, serif; font-size: 0.95rem;
+  background: #fafaf7; border: 1px solid #eee; padding: 1rem;
+  border-radius: 6px; line-height: 1.5;
+}
+.thumbnail { max-width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+.result { background: #f3f4f6; padding: 0.8rem; border-radius: 6px;
+  font-size: 0.8rem; overflow-x: auto; }
+.rejection-note { background: #fef2f2; border-left: 3px solid #dc2626;
+  padding: 0.6rem 0.8rem; }
+
+.btn {
+  display: inline-block; border: none; border-radius: 6px;
+  padding: 0.55rem 1.2rem; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; text-decoration: none;
+}
+.btn-view { background: #1a1a2e; color: #fff; font-size: 0.85rem; padding: 0.4rem 0.9rem; }
+.btn-approve { background: #059669; color: #fff; }
+.btn-approve:disabled { background: #9ca3af; cursor: default; }
+.btn-reject { background: #dc2626; color: #fff; margin-left: 0.6rem; }
+.btn-reject:disabled { background: #9ca3af; cursor: default; }
+.actions { margin-top: 1rem; }
+#action-status { margin-top: 0.8rem; font-weight: 600; white-space: pre-wrap; }
+.spinner {
+  display: inline-block; width: 1em; height: 1em;
+  border: 2px solid #ccc; border-top-color: #059669; border-radius: 50%;
+  animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 0.4rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+table.history { width: 100%; border-collapse: collapse; background: #fff;
+  border: 1px solid #ddd; border-radius: 8px; }
+table.history th, table.history td {
+  text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+table.history th { background: #f9fafb; }
+.empty { color: #888; }

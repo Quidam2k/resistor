@@ -58,6 +58,16 @@ state:
       phone: "503-986-1414"
       address: "900 Court St NE, H-271, Salem, OR 97301"
 
+  governor:
+    - name: Tina Kotek
+      party: D
+      title: Governor of Oregon
+      contact_url: https://www.oregon.gov/gov/pages/contact-us.aspx
+      email: "Governor.Kotek@oregon.gov"
+      phone: "503-378-4582"
+      address: "900 Court Street NE, Suite 254, Salem, OR 97301-4047"
+      notes: "Fax may be 503-378-8970 but unverified. Email is the best channel."
+
 city:
   # Look up your city council ward/district from your address
   # Example for Eugene: https://www.eugene-or.gov/537/Mayor-and-City-Council
