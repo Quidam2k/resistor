@@ -9,6 +9,7 @@ Two loops:
 CLI: `python -m src.tracker` prints the scoreboard.
 """
 
+import re
 from datetime import datetime
 
 from src import db
@@ -19,6 +20,11 @@ from src.congress_api import MEMBER_IDS, _congress_get, fetch_bill_info
 # FUTURE: fold these into config/representatives.yaml so non-federal reps and new
 # members don't require a code change.
 REP_BIOGUIDE = {name: info["bioguide"] for name, info in MEMBER_IDS.items()}
+
+
+def redact_api_key(text: str) -> str:
+    """Strip api_key=... from error text (requests embeds the full URL)."""
+    return re.sub(r"(api_key=)[^&\s]+", r"\1REDACTED", text)
 
 # Sender domains for pulling replies via the Gmail connector. State/local reps
 # with direct email can be added here as we start corresponding with them.
@@ -109,7 +115,7 @@ def check_open_asks(update: bool = True) -> list[dict]:
                 supporters_cache[key] = fetch_bill_supporters(*key)
             supporters = supporters_cache[key]
         except Exception as e:
-            note = f"API error checking {bill_label}: {e}"
+            note = redact_api_key(f"API error checking {bill_label}: {e}")
             if update:
                 db.update_ask_status(ask["id"], last_checked=now,
                                      last_status_note=note)
