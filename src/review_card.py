@@ -21,12 +21,19 @@ from pathlib import Path
 
 from src.config import load_user
 from src.db import get_letter_by_id
+from src.delivery.router import get_delivery_info
 
 PANTHEON = Path("Q:/Pantheon")
 REVIEW_DIR = PANTHEON / "notes" / "review"
-VIA = {"fax": "fax", "mail": "Lob mail, Eugene office", "email": "email",
-       "web_form": "web form"}
+VIA = {"fax": "fax", "email": "email", "web_form": "web form"}
 P_RE = re.compile(r"^<!-- p:(\w+) -->\n(.*?)(?=\n\n|\n?\Z)", re.S | re.M)
+
+
+def _via(letter: dict) -> str:
+    if letter["channel"] != "mail":
+        return VIA.get(letter["channel"], letter["channel"])
+    city = (get_delivery_info(letter["recipient"]).get("mail_address") or {}).get("address_city")
+    return f"Lob mail, {city} office" if city else "Lob mail"
 
 
 def _span(ids: list[str]) -> str:
@@ -58,13 +65,13 @@ def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str 
             else:
                 ref = f"P{lid}{chr(97 + j)}"
                 own.append((ref, p))
-                parts.append(["G" if p.startswith("Dear ") else "O", [ref]])
+                parts.append(["G" if p.startswith(("Dear ", "To the ")) else "O", [ref]])
             refs.append(ref)
         n_own = sum(1 for k, _ in parts if k == "O")
         what = " + ".join(_span(r) if k == "S" else "its greeting" if k == "G"
                           else "its own paragraph" if n_own == 1 else "its own text"
                           for k, r in parts)
-        out += [f"## #{lid} to {l['recipient']} ({VIA.get(l['channel'], l['channel'])})", "",
+        out += [f"## #{lid} to {l['recipient']} ({_via(l)})", "",
                 f"**From:** {sender} · **To:** {l['recipient']}  ",
                 f"**This letter is:** {what}", "",
                 f"<!-- assemble #{lid}: {' '.join(refs)} -->", ""]

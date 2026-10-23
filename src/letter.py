@@ -11,6 +11,19 @@ from src.db import save_letter, get_prior_correspondence
 LETTERS_DIR = DATA_DIR / "letters"
 
 
+def _unique_letter_path(stem: str) -> Path:
+    """First free LETTERS_DIR/<stem>.md, then <stem>-2.md, -3.md...
+
+    Redrafts share a date, recipient and topic prefix, so without the suffix
+    a v3 overwrote v2's file and rejecting v2 stamped the v3 text 'rejected'.
+    """
+    os.makedirs(LETTERS_DIR, exist_ok=True)
+    filepath, n = LETTERS_DIR / f"{stem}.md", 2
+    while filepath.exists():
+        filepath, n = LETTERS_DIR / f"{stem}-{n}.md", n + 1
+    return filepath
+
+
 def format_letter(recipient_name: str, recipient_title: str, topic: str,
                   body: str, include_address: bool = True) -> str:
     """Format a complete letter with constituent header.
@@ -55,10 +68,7 @@ def save_letter_markdown(recipient_name: str, topic: str, body: str,
     date_str = datetime.now().strftime("%Y-%m-%d")
     safe_topic = topic.lower().replace(" ", "-")[:40]
     safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
-    filename = f"{date_str}-{safe_recipient}-{safe_topic}.md"
-
-    filepath = LETTERS_DIR / filename
-    os.makedirs(LETTERS_DIR, exist_ok=True)
+    filepath = _unique_letter_path(f"{date_str}-{safe_recipient}-{safe_topic}")
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"# Letter to {recipient_name}\n\n")
@@ -91,10 +101,7 @@ def write_letter_markdown(recipient_name: str, topic: str, body: str,
     date_str = datetime.now().strftime("%Y-%m-%d")
     safe_topic = topic.lower().replace(" ", "-")[:40]
     safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
-    filename = f"{date_str}-{safe_recipient}-{safe_topic}.md"
-
-    filepath = LETTERS_DIR / filename
-    os.makedirs(LETTERS_DIR, exist_ok=True)
+    filepath = _unique_letter_path(f"{date_str}-{safe_recipient}-{safe_topic}")
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"# Letter to {recipient_name}\n\n")

@@ -37,6 +37,23 @@ DELIVERY_DEFAULTS = {
                       "address_state": "OR",
                       "address_zip": "97401",
                   }},
+    # Party letters (#9247): DPO fax per dpo.org/contact; the DNC lists no fax
+    # on democrats.org, so it goes by mail to the address on its FEC filings.
+    "Democratic Party of Oregon": {"channel": "fax", "fax_number": "503-224-5335",
+                                   "mail_address": {
+                                       "name": "Democratic Party of Oregon",
+                                       "address_line1": "1220 SW Morrison St Ste 910",
+                                       "address_city": "Portland",
+                                       "address_state": "OR",
+                                       "address_zip": "97205",
+                                   }},
+    "Democratic National Committee": {"channel": "mail", "mail_address": {
+        "name": "Democratic National Committee",
+        "address_line1": "430 South Capitol St SE",
+        "address_city": "Washington",
+        "address_state": "DC",
+        "address_zip": "20003",
+    }},
     "Supreme Court": {"channel": "mail", "mail_address": {
         "name": "Supreme Court of the United States",
         "address_line1": "1 First Street NE",
