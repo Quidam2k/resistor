@@ -6,6 +6,8 @@ Status key: `proposed` (surfaced, not yet chosen) · `queued` · `sent` · `park
 
 ### Active / recently sent
 - **RCV cosponsorship (S.3425 / H.R.6589)** — `sent` 2026-08-18 to Wyden, Merkley, Hoyle. Next: follow-up round WITH response-invitation language; watch for cosponsorship movement.
+- **Vote day: voted against, not for (#4868, #9387)**: `queued` 2026-10-25. #64 Merkley fax, #65 Hoyle Lob (RCV follow-up), #66 DPO fax, #67 DNC Lob (platform plank). Wyden left off (not on the 2026 ballot).
+- **Hawaii-style limits on corporate election spending (Citizens United, #9387)**: `queued` (held_next_round) 2026-10-25. #68 Fahey, #69 Manning by email. Hawaii Act 11 is in federal court (Grassroot Institute v. Lopez); Montana I-194 is decided 11/3, so refresh the facts before sending. Kotek is still to be added.
 
 ### New candidates surfaced 2026-08-18 (not previously discussed) — all CONFIRMED as backlog by Todd 8/18
 _Todd's call 8/18: log all four; do NOT draft yet. Re-scan facts fresh at draft time so letters are never based on month-old facts._
