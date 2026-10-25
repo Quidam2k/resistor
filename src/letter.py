@@ -1,6 +1,7 @@
 """Letter composition, formatting, and storage."""
 
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -22,6 +23,17 @@ def _unique_letter_path(stem: str) -> Path:
     while filepath.exists():
         filepath, n = LETTERS_DIR / f"{stem}-{n}.md", n + 1
     return filepath
+
+
+# Windows refuses these in filenames; a ':' silently writes the letter into an
+# NTFS alternate data stream and leaves a 0-byte file (#59-61, 2026-10-23; #9387).
+_UNSAFE_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]')
+
+
+def _letter_stem(date_str: str, recipient_name: str, topic: str) -> str:
+    safe_topic = topic.lower().replace(" ", "-")[:40]
+    safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
+    return _UNSAFE_FILENAME_CHARS.sub("", f"{date_str}-{safe_recipient}-{safe_topic}")
 
 
 def format_letter(recipient_name: str, recipient_title: str, topic: str,
@@ -66,9 +78,7 @@ def save_letter_markdown(recipient_name: str, topic: str, body: str,
     Returns the path to the saved markdown file.
     """
     date_str = datetime.now().strftime("%Y-%m-%d")
-    safe_topic = topic.lower().replace(" ", "-")[:40]
-    safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
-    filepath = _unique_letter_path(f"{date_str}-{safe_recipient}-{safe_topic}")
+    filepath = _unique_letter_path(_letter_stem(date_str, recipient_name, topic))
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"# Letter to {recipient_name}\n\n")
@@ -99,9 +109,7 @@ def write_letter_markdown(recipient_name: str, topic: str, body: str,
     which manages its own DB row.
     """
     date_str = datetime.now().strftime("%Y-%m-%d")
-    safe_topic = topic.lower().replace(" ", "-")[:40]
-    safe_recipient = recipient_name.lower().replace(" ", "-").replace(".", "")
-    filepath = _unique_letter_path(f"{date_str}-{safe_recipient}-{safe_topic}")
+    filepath = _unique_letter_path(_letter_stem(date_str, recipient_name, topic))
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"# Letter to {recipient_name}\n\n")
