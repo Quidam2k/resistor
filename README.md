@@ -49,7 +49,7 @@ Resistor automates the tedious parts (research, delivery, record-keeping) so you
 
 **1. Get the code:**
 ```bash
-git clone https://github.com/yourusername/resistor.git
+git clone https://github.com/Quidam2k/resistor.git
 cd resistor
 pip install -r requirements.txt
 ```
@@ -183,4 +183,4 @@ This project started as one person's civic engagement tool and is designed to be
 
 ## License
 
-MIT
+MIT, see [LICENSE](LICENSE).
