@@ -19,11 +19,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.config import load_user
+from src.config import load_user, local_setting
 from src.db import get_letter_by_id
 from src.delivery.router import get_delivery_info
 
-PANTHEON = Path("Q:/Pantheon")
+PANTHEON = Path(local_setting("host_root", "PANTHEON_ROOT", "host-app"))
 REVIEW_DIR = PANTHEON / "notes" / "review"
 VIA = {"fax": "fax", "email": "email", "web_form": "web form"}
 P_RE = re.compile(r"^<!-- p:(\w+) -->\n(.*?)(?=\n\n|\n?\Z)", re.S | re.M)

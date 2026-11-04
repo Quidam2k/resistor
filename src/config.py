@@ -1,5 +1,6 @@
 """Load project configuration files."""
 
+import json
 import os
 from pathlib import Path
 
@@ -11,6 +12,17 @@ CONFIG_DIR = PROJECT_ROOT / "config"
 # (rehearsals and tests); unset for real use. (#1295)
 DATA_DIR = Path(os.environ["RESIST_DATA_DIR"]) if os.environ.get(
     "RESIST_DATA_DIR") else PROJECT_ROOT / "data"
+
+
+def local_setting(key: str, env: str, default: str = "") -> str:
+    """Machine-specific value: the env var, else config/local_paths.json (gitignored), else default."""
+    if os.environ.get(env):
+        return os.environ[env]
+    try:
+        value = json.loads((CONFIG_DIR / "local_paths.json").read_text(encoding="utf-8")).get(key)
+    except (OSError, ValueError, AttributeError):
+        value = None
+    return value or default
 
 
 def load_yaml(path: Path) -> dict:

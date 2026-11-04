@@ -44,3 +44,12 @@ screengrab/
 
 # Temp files
 send_faxes.py
+
+# Internal working material and machine-specific settings (kept on disk, not published)
+notes/
+cascades/
+.claude/
+NOTE-*
+session-state.md
+CLAUDE.local.md
+config/local_paths.json

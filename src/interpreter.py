@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src import db
-from src.config import DATA_DIR, load_user
+from src.config import DATA_DIR, load_user, local_setting
 from src.congress_api import MEMBER_IDS
 from src.delivery.router import get_delivery_info
 from src.letter import (get_context_for_letter, parse_letter_markdown,
@@ -31,7 +31,7 @@ from src.outbox import estimate_cost_cents, queue_letter_from_markdown
 
 MENU_PATH = DATA_DIR / "runtime" / "interpreter_menu.json"
 SESSIONS_DIR = DATA_DIR / "sessions"
-PANTHEON_DB = Path(os.environ.get("PANTHEON_DB", "Q:/Pantheon/data/pantheon.db"))
+PANTHEON_DB = Path(local_setting("host_db", "PANTHEON_DB", "host-app.db"))
 
 PER_GROUP = 3            # keep the spoken menu short
 REDRAFT_WINDOW_DAYS = 60

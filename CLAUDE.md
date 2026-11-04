@@ -80,10 +80,10 @@ Route opportunistically — use whatever channel is fastest and most automatable
 - **Reference prior correspondence** — "In my letter of [date], I wrote about X. Your office responded that Y. I'm following up because Z." This kind of continuity is rare and gets attention.
 - **Be specific** — reference bill numbers, specific actions, specific asks
 - **Assertive but respectful tone** — passionate is fine, abusive is counterproductive
-- **No claims about Todd's feelings, reactions, presence, or continuous actions** (#8364) — never write "I can't stop thinking about it", "heartbroken", "I keep...", "ever since...", "I was there/attended/marched" unless Todd wrote that exact sentence himself. The interpreter lint blocks these; his own sentences pass via `draft --todd-wrote "<exact sentence>"`.
-- **Don't recount the public record** (#8364) — name the event ("the Bend school shooting"); no death tolls, ages, or blow-by-blow. Staffers already know.
-- **Be succinct** (#8364) — Todd reads every letter himself; aim for ~200 words.
-- **Multi-recipient batches: one shared body + one personal paragraph each** (#8419) — identical shared paragraphs in every letter, plus ONE genuinely member-specific paragraph per rep (their committee, cosponsor status, past vote or statement, and their ask); greeting is per letter. Build the review card with `python -m src.review_card --ids A,B,C` (shows shared text once, verifies byte-for-byte reassembly; `--attach` adds approve buttons).
+- **No claims about the user's feelings, reactions, presence, or continuous actions** — never write "I can't stop thinking about it", "heartbroken", "I keep...", "ever since...", "I was there/attended/marched" unless the user wrote that exact sentence themselves. The interpreter lint blocks these; their own sentences pass via `draft --todd-wrote "<exact sentence>"`.
+- **Don't recount the public record** — name the event ("the Bend school shooting"); no death tolls, ages, or blow-by-blow. Staffers already know.
+- **Be succinct** — the user reads every letter themselves; aim for ~200 words.
+- **Multi-recipient batches: one shared body + one personal paragraph each** — identical shared paragraphs in every letter, plus ONE genuinely member-specific paragraph per rep (their committee, cosponsor status, past vote or statement, and their ask); greeting is per letter. Build the review card with `python -m src.review_card --ids A,B,C` (shows shared text once, verifies byte-for-byte reassembly; `--attach` adds approve buttons).
 
 ## Important Behavioral Notes
 
