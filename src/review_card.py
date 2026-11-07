@@ -40,14 +40,39 @@ def _span(ids: list[str]) -> str:
     return ids[0] if len(ids) == 1 else f"{ids[0]}-{ids[-1]}"
 
 
-def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str = "") -> str:
+# #5525: cross-batch dedupe of address/date/sign-off
+def common_paragraphs(groups: list[list[dict]]) -> dict[str, str]:
+    """Paragraphs identical in EVERY letter of EVERY batch (address, date, sign-off), id X1, X2..."""
+    letters = [l for g in groups for l in g]
+    if len(groups) < 2:
+        return {}
+    first = letters[0]["body"].split("\n\n")
+    everywhere = [p for p in first if all(p in l["body"].split("\n\n") for l in letters)]
+    return {p: f"X{i + 1}" for i, p in enumerate(dict.fromkeys(everywhere))}
+
+
+def common_block(common: dict[str, str], n_letters: int) -> str:
+    if not common:
+        return ""
+    out = [f"## Common to every letter (identical in all {n_letters} letters)", ""]
+    for p, cid in common.items():
+        out += [f"**{cid}**", f"<!-- p:{cid} -->", p, ""]
+    return "\n".join(out + ["---", ""])
+
+
+def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str = "",
+               common: dict[str, str] | None = None, common_md: str = "") -> str:
     u = load_user()
     sender = f"{u['name']}, {u['city']}, {u['state']} {u['zip']}"
     paras = {l["id"]: l["body"].split("\n\n") for l in letters}
     first = paras[letters[0]["id"]]
-    shared = [p for p in first if len(letters) > 1 and all(p in paras[l["id"]] for l in letters)]
-    sid = {p: f"{tag}{i + 1}" for i, p in enumerate(shared)}
+    common = common or {}
+    shared = [p for p in first if len(letters) > 1 and p not in common
+              and all(p in paras[l["id"]] for l in letters)]
+    sid = {p: f"{tag}{i + 1}" for i, p in enumerate(shared)} | common
     out = [intro.strip(), ""] if intro.strip() else []
+    if common_md:
+        out += [common_md, ""]
     if shared:
         out += [f"## Shared text{topic} (identical in all {len(letters)} letters)", ""]
         for p in shared:
@@ -58,7 +83,7 @@ def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str 
         for j, p in enumerate(paras[lid]):
             if p in sid:
                 ref = sid[p]
-                if parts and parts[-1][0] == "S":  # a run of shared paragraphs
+                if parts and parts[-1][0] == "S" and parts[-1][1][-1][0] == ref[0]:  # a run of one block's paragraphs
                     parts[-1][1].append(ref)
                 else:
                     parts.append(["S", [ref]])
@@ -116,9 +141,12 @@ def main(argv=None) -> int:
     if None in letters:
         raise SystemExit(f"unknown letter id in {a.ids}")
     intro = Path(a.intro_file).read_text(encoding="utf-8") if a.intro_file else ""
-    body = "\n---\n\n".join(build_card(g, intro if i == 0 else "", tag="S" if len(groups) == 1 else chr(65 + i),
-                                topic="" if len(groups) == 1 else f" for {g[0]['topic']}")
-                     for i, g in enumerate(groups))
+    common = common_paragraphs(groups)
+    body = "\n---\n\n".join(
+        build_card(g, intro if i == 0 else "", tag="S" if len(groups) == 1 else chr(65 + i),
+                   topic="" if len(groups) == 1 else f" for {g[0]['topic']}", common=common,
+                   common_md=common_block(common, len(letters)) if i == 0 else "")
+        for i, g in enumerate(groups))
     ids = ",".join(str(l["id"]) for l in letters)
     errs = verify_card(body, letters)
     if errs:
