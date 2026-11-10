@@ -6,6 +6,7 @@ config/user.yaml
 data/letters/
 data/sessions/
 data/responses/
+data/reviews/
 data/voting_records/
 data/bills/
 data/research-*.md
