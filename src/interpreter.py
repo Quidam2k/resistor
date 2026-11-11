@@ -225,6 +225,10 @@ def lint_letter(body: str, item: dict,
     errors, warnings = [], []
     if "\u2014" in body or "\u2013" in body:
         errors.append("contains an em/en dash (letters must not read as AI-written)")
+    url = re.search(r"https?://\S+|\bwww\.\S+", body)
+    if url:
+        errors.append(f"contains a URL ({url.group(0)}); sources go to the reviewer, "
+                      "not the letter (#5863)")
     exempt = {s.strip() for s in todd_wrote}
     for sentence in SENTENCE_RE.findall(body):
         m = EMOTION_RE.search(sentence)

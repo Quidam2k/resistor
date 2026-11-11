@@ -62,3 +62,14 @@ def test_address_date_signoff_shown_once_across_batches():
 def test_single_batch_has_no_common_block():
     from src.review_card import common_paragraphs
     assert common_paragraphs([_group([1, 2], "T.")]) == {}
+
+
+def test_record_block_is_reviewer_only(monkeypatch):
+    from src import rep_record
+    monkeypatch.setattr(rep_record, "record_context", lambda conn, rep, topic: [
+        dict(date="2026-01-02", label="reported, unverified", text='article: "x"', url="https://e.x/a")])
+    letters = [dict(l, topic="tariffs") for l in LETTERS]
+    card = build_card(letters)
+    assert card.count("Their record on this topic") == 2
+    assert "[reported, unverified]" in card
+    assert verify_card(card, letters) == []  # the block never enters a letter

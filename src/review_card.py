@@ -102,8 +102,20 @@ def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str 
                 f"<!-- assemble #{lid}: {' '.join(refs)} -->", ""]
         for ref, p in own:
             out += [f"<!-- p:{ref} -->", p, ""]
+        out += record_block(l["recipient"], l.get("topic") or "")
         out += ["---", ""]
     return "\n".join(out).rstrip("\n-").rstrip() + "\n"
+
+
+def record_block(recipient: str, topic: str) -> list[str]:
+    """Reviewer-only lines (#5863): the rep's own record on this topic, so the reviewer can see
+    whether a public statement already answers the ask. Never part of the letter text."""
+    from src.rep_record import format_record_context, record_items
+    items = record_items(recipient, topic)
+    if not items:
+        return []
+    return ["**Their record on this topic** (reviewer only; does any of it already answer the ask?)", "",
+            *format_record_context(items), ""]
 
 
 def verify_card(card_text: str, letters: list[dict]) -> list[str]:

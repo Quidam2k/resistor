@@ -312,3 +312,19 @@ def test_ensure_schema_migrates_existing_votes_idempotently():
     finally:
         connection.close()
 
+
+
+def test_record_context_labels_and_keyword_fallback(conn):
+    rep_record._save_statement(conn, dict(rep="Ron Wyden", date="2026-03-01", title="Tariffs", venue="Senate floor",
+        quote="These tariffs are a tax on Oregon families.", quote_kind="floor", url="https://g/1", source_kind="floor", verified=1))
+    rep_record._save_statement(conn, dict(rep="Ron Wyden", date="2026-04-01", title="Interview", venue="OPB",
+        quote="Tariffs hurt farmers.", quote_kind="personal", url="https://o/2", source_kind="media", verified=0))
+    conn.execute("INSERT INTO voting_records (representative, vote_date, bill_id, bill_title, vote, chamber, roll_url) "
+                 "VALUES ('Ron Wyden', '2025-10-30', 'SJRES88', 'terminating the national emergency to impose global tariffs', 'Yea', 'Senate', 'https://s/600')")
+    items = rep_record.record_context(conn, "Ron Wyden", "tariffs on Oregon families")
+    assert [i["label"] for i in items if i["kind"] == "statement"] == ["verified"]  # AND match: only the floor quote
+    items = rep_record.record_context(conn, "Ron Wyden", "tariffs and Canada")  # no AND hit: falls back to any keyword
+    assert {i["label"] for i in items} == {"verified", "reported, unverified"}
+    assert any(i["kind"] == "vote" and "SJRES88" in i["text"] for i in items)
+    assert rep_record.record_context(conn, "Ron Wyden", "") == []
+    assert all("(source: " in line for line in rep_record.format_record_context(items))

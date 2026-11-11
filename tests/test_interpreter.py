@@ -207,3 +207,10 @@ def test_rehearsal_fails_closed_with_live_key_present():
          "--body-file", "x"], cwd=Path(__file__).resolve().parent.parent,
         env=env, capture_output=True, text=True)
     assert proc.returncode != 0 and "LOB_API_KEY" in proc.stderr
+
+
+def test_lint_blocks_urls():
+    errors, _ = interpreter.lint_letter(_body("See https://example.org/x for more."), {"bills": []})
+    assert any("URL" in e for e in errors)
+    errors, _ = interpreter.lint_letter(_body("Details at www.example.org today."), {"bills": []})
+    assert any("URL" in e for e in errors)

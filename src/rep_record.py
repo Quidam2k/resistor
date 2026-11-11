@@ -263,6 +263,22 @@ def _backfill_votes(conn, reps):
                 print(f"  ERROR: {error['source']}: {error['error']}")
         for error in rep["_errors"]: print(f"  ERROR: {error}")
 
+def _backfill_statements(conn, reps, kind, max_years=None):
+    """Floor speeches (GovInfo, federal reps, 1994 on) or archived campaign sites (Wayback, 1996 on),
+    newest year first, resumable. Once a rep is exhausted a run only refreshes the current year."""
+    from src import rep_crec, rep_wayback
+    this_year = Date.today().year
+    for rep in reps:
+        if kind == "crec" and rep["chamber_hint"] not in {"Senate", "House"}: continue
+        if kind == "wayback" and not rep.get("campaign_domains"): continue
+        if not rep.get("in_office_since"): continue
+        source, floor = f"statements:{kind}", 1994 if kind == "crec" else 1996
+        years = rep_crec.years_to_collect(conn, rep, this_year, floor, source)[:max_years]
+        collect = rep_crec.collect_crec if kind == "crec" else rep_wayback.collect_wayback
+        result = collect(conn, rep, years, oldest=max(floor, int(rep["in_office_since"])))
+        print(f"{rep['name']} {kind}: {result['inserted']} new statements, years done {result['years_done'][:1] + result['years_done'][-1:]}")
+        for error in result["errors"]: print(f"  ERROR: {error}")
+
 def _below_normal_priority():
     """Batch work must never compete with the person at the keyboard."""
     if sys.platform == "win32":
@@ -305,6 +321,59 @@ def _show(conn, rep, limit):
     for row in _dicts(conn, "SELECT * FROM voting_records WHERE representative=? ORDER BY vote_date DESC, id DESC LIMIT ?", (rep, limit)):
         print(f"{row['vote_date']} | {row['bill_id'] or ''} | {row['vote']} | {row['question'] or row['bill_title'] or ''} | {row['roll_url'] or row['source_url'] or ''}")
 
+STOPWORDS = {"about", "with", "from", "that", "this", "their", "your", "letter", "follow", "support", "oppose"}
+
+def _keywords(topic):
+    return [w for w in re.findall(r"[a-z0-9.]{4,}", (topic or "").lower()) if w not in STOPWORDS]
+
+def _excerpt(text, words, width=300):
+    """The stretch of text around the first keyword hit, so a long floor speech stays readable."""
+    low = text.lower()
+    hit = min((i for i in (low.find(w) for w in words) if i >= 0), default=0)
+    start = max(0, hit - width // 3)
+    snippet = text[start:start + width].strip()
+    return ("..." if start else "") + snippet + ("..." if start + width < len(text) else "")
+
+def _matching(conn, sql, cols, words, params, order, limit):
+    """Rows where every keyword appears in some column; failing that, any keyword."""
+    hit = lambda w: "(" + " OR ".join(f"lower(coalesce({c},'')) LIKE ?" for c in cols) + ")"
+    for joiner in (" AND ", " OR "):
+        where = joiner.join(hit(w) for w in words)
+        rows = _dicts(conn, f"{sql} AND ({where}) ORDER BY {order} LIMIT ?",
+                      (*params, *[f"%{w}%" for w in words for _ in cols], limit))
+        if rows or len(words) == 1: return rows
+    return []
+
+def record_context(conn, rep, topic, limit=2):
+    """The rep's own statements and votes on a topic, newest first, each labelled
+    'verified' (word for word in a fetched primary source) or 'reported, unverified'."""
+    words = _keywords(topic)
+    if not words: return []
+    items = []
+    for row in _matching(conn, "SELECT * FROM rep_statements WHERE rep=? AND quote IS NOT NULL", ("quote", "title"),
+                         words, (rep,), "date DESC, id DESC", limit):
+        items.append(dict(kind="statement", date=row["date"], label="verified" if row["verified"] else "reported, unverified",
+                          text=f"{row['venue'] or row['source_kind']}: \"{_excerpt(row['quote'], words)}\"", url=row["url"]))
+    for row in _matching(conn, "SELECT * FROM voting_records WHERE representative=?", ("bill_title", "question", "bill_id"),
+                         words, (rep,), "vote_date DESC, id DESC", limit):
+        what = " ".join(x for x in (row["bill_id"], (row["bill_title"] or "")[:160], f"({row['question']})" if row["question"] else "") if x)
+        items.append(dict(kind="vote", date=row["vote_date"][:10], label="verified",
+                          text=f"voted {row['vote']} on {what}", url=row["roll_url"] or row["source_url"]))
+    return items
+
+def record_items(rep, topic):
+    """record_context on its own connection, for callers outside a collector run."""
+    if not _keywords(topic): return []
+    conn = get_connection()
+    try:
+        ensure_schema(conn)
+        return record_context(conn, rep, topic)
+    finally:
+        conn.close()
+
+def format_record_context(items):
+    return [f"- {i['date']} [{i['label']}] {i['text']} (source: {i['url']})" for i in items]
+
 def _progress(conn, reps):
     for rep in reps:
         rows = _dicts(conn, "SELECT * FROM backfill_progress WHERE rep=? ORDER BY source", (rep["name"],))
@@ -312,7 +381,7 @@ def _progress(conn, reps):
         hint = rep["chamber_hint"]
         if hint in {"Senate", "House"}:
             sources.update(("bills:congress-sponsor", "bills:congress-cosponsor",
-                            "votes:voteview-senate" if hint == "Senate" else "votes:congress-house"))
+                            "votes:voteview-senate" if hint == "Senate" else "votes:congress-house", "statements:crec"))
         elif rep["or_code"]: sources.update(("bills:oregon", "votes:oregon"))
         known = {r["source"] for r in rows}
         rows += [dict(source=s, oldest_date=None, items=0, exhausted=0, note="") for s in sources - known]
@@ -323,6 +392,7 @@ def _progress(conn, reps):
         oldest = min((r["oldest_date"] for r in rows if r["oldest_date"]), default=None)
         pct = coverage_pct(oldest, year, Date.today())
         print(f"{rep['name']} | all sources | {oldest or '-'} | {str(pct) + '%' if pct is not None else '-'}")
+        if rep.get("record_gaps"): print(f"{rep['name']} | gaps | {rep['record_gaps']}")
 
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"): sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -340,16 +410,22 @@ def main(argv=None):
     sub.add_parser("progress")
     backfill = sub.add_parser("backfill-votes", help="whole-career Voteview roll calls (slow, polite)")
     backfill.add_argument("--rep")
+    for kind, help_text in (("crec", "Congressional Record floor speeches, 1994 on (slow, resumable)"),
+                            ("wayback", "archived campaign sites from campaign_domains (very slow, resumable)")):
+        statements = sub.add_parser(f"backfill-{kind}", help=help_text)
+        statements.add_argument("--rep"); statements.add_argument("--max-years", type=int)
     args = parser.parse_args(argv)
     conn = get_connection()
     try:
         ensure_schema(conn); conn.commit()
-        if args.command in {"refresh", "backfill-votes"}:
+        if args.command in {"refresh", "backfill-votes", "backfill-crec", "backfill-wayback"}:
             reps = [r for r in iter_reps(load_representatives()) if not args.rep or r["name"].casefold() == args.rep.casefold()]
             if not reps: parser.error("no matching representatives")
             _below_normal_priority()
             if args.command == "backfill-votes":
                 _backfill_votes(conn, reps); return 0
+            if args.command.startswith("backfill-"):
+                _backfill_statements(conn, reps, args.command.split("-", 1)[1], args.max_years); return 0
             args.conn = conn
             return _refresh(conn, args, reps)
         if args.command == "import-senate":

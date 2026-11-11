@@ -164,11 +164,12 @@ def get_context_for_letter(recipient_name: str, topic: str = None) -> str:
     Returns a summary of what we've written before and any responses received.
     """
     history = get_prior_correspondence(recipient_name, topic)
+    record = _record_section(recipient_name, topic)
 
     if not history:
         return f"No prior correspondence with {recipient_name}" + (
             f" on {topic}" if topic else ""
-        ) + "."
+        ) + "." + record
 
     lines = [f"Prior correspondence with {recipient_name}:"]
     for entry in history:
@@ -188,4 +189,15 @@ def get_context_for_letter(recipient_name: str, topic: str = None) -> str:
                 resp_preview += "..."
             lines.append(f"  {resp_preview}")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + record
+
+
+def _record_section(recipient_name: str, topic: str | None) -> str:
+    """The rep's own public record on the topic (#5863). Cite at most one or two items, never a URL;
+    'reported, unverified' items may only be called reported. Empty when nothing matches."""
+    from src.rep_record import format_record_context, record_items
+    items = record_items(recipient_name, topic)
+    if not items:
+        return ""
+    return ("\n\nPublic record on this topic (cite at most one or two, no URLs in the letter; "
+            "check whether it already answers the ask):\n" + "\n".join(format_record_context(items)))

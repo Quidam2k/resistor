@@ -21,6 +21,7 @@ federal:
       in_office_since: 1981
       feeds:  # rep_record statement sources (#5863)
         - {kind: rss, url: "https://www.wyden.senate.gov/rss/feeds/?type=press"}  # titles only; pages refuse scripts
+      record_gaps: "House-era press releases 1981-96; floor text before 1994 (scanned volumes only)"
 
     - name: Jeff Merkley
       party: D
@@ -35,6 +36,7 @@ federal:
       in_office_since: 1999  # Oregon House 1999-2009
       feeds:
         - {kind: rss, url: "https://www.merkley.senate.gov/feed/"}  # full text in content:encoded
+      record_gaps: "Oregon House 1999-2006 votes and bills (OLIS OData starts 2007); Oregon House floor/committee video"
 
   house:
     - name: Val Hoyle
@@ -48,6 +50,7 @@ federal:
       dc_address: "1620 Longworth House Office Bldg, Washington, DC 20515"
       feeds:
         - {kind: listing, url: "https://hoyle.house.gov/media/press-releases", link_prefix: "/media/press-releases/"}
+      record_gaps: "Oregon House 2009-17 and Labor Commissioner 2019-23 records; OLIS floor/committee video and minutes"
 
 state:
   senate:
@@ -61,6 +64,7 @@ state:
       email: "Sen.JamesManning@oregonlegislature.gov"
       phone: "503-986-1707"
       address: "900 Court St NE, Salem, OR 97301"
+      record_gaps: "OLIS committee/floor video and minutes not collected; only the current session's votes and bills"
 
   house:
     - name: Julie Fahey
@@ -73,6 +77,7 @@ state:
       email: "Rep.JulieFahey@oregonlegislature.gov"
       phone: "503-986-1414"
       address: "900 Court St NE, H-271, Salem, OR 97301"
+      record_gaps: "OLIS committee/floor video and minutes not collected; only the current session's votes and bills"
 
   governor:
     - name: Tina Kotek
@@ -86,6 +91,7 @@ state:
       feeds:
         - {kind: listing, url: "https://apps.oregon.gov/oregon-newsroom/OR/GOV/Posts", link_prefix: "/oregon-newsroom/OR/GOV/Posts/Post/"}
       notes: "Fax may be 503-378-8970 but unverified. Email is the best channel."
+      record_gaps: "Oregon House 2007-22 votes and bills; OLIS floor/committee video and minutes"
 
 city:
   # Look up your city council ward/district from your address
