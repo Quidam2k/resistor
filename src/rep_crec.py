@@ -24,6 +24,11 @@ _PAGE = re.compile(r"\[\[Page [^\]]*\]\]")
 _VENUES = {"PgS": "Senate floor", "PgH": "House floor", "PgE": "Extensions of Remarks"}
 
 
+def _redact(message: str) -> str:
+    """Error text quotes the request URL; never let the api.data.gov key reach a log."""
+    return re.sub(r"(api_key=)[^&\s]+", r"\1REDACTED", message)
+
+
 def clean_text(raw: str) -> str:
     """Granule html as plain text: tags stripped, entities unescaped, page markers dropped."""
     return "\n" + _PAGE.sub(" ", html.unescape(re.sub(r"<[^>]+>", "", raw)))
@@ -120,7 +125,7 @@ def collect_crec(
             items = search(surname, year)
         except requests.HTTPError as exc:
             result["errors"].append(
-                {"rep": rep["name"], "source": _SOURCE, "error": str(exc)}
+                {"rep": rep["name"], "source": _SOURCE, "error": _redact(str(exc))}
             )
             return result
         for item in items:
@@ -133,7 +138,7 @@ def collect_crec(
                 text = fetch(url)
             except requests.HTTPError as exc:
                 result["errors"].append(
-                    {"rep": rep["name"], "source": _SOURCE, "error": str(exc)}
+                    {"rep": rep["name"], "source": _SOURCE, "error": _redact(str(exc))}
                 )
                 continue
             venue = next((label for marker, label in _VENUES.items() if marker in granule),

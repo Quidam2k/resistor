@@ -90,6 +90,7 @@ def collect_youtube(conn, rep, root) -> dict:
                     counts["inserted"] += 1
                     counts["verified"] += verified
                     dates_saved.append(video["published"])
+            conn.commit()  # per video: never hold the shared DB lock for a whole channel
         update_progress(conn, name, "statements:youtube", dates_saved,
                         note="captions have no timestamps")
         conn.commit()

@@ -177,7 +177,7 @@ def _attempt(rep, source, function, *args):
     try: return function(*args)
     except (requests.RequestException, ValueError, ET.ParseError, OSError, RuntimeError) as exc:
         code = getattr(getattr(exc, "response", None), "status_code", "")
-        rep.setdefault("_errors", []).append(f"{source}: {code} {exc}")
+        rep.setdefault("_errors", []).append(re.sub(r"(api_key=)[^&\s]+", r"\1REDACTED", f"{source}: {code} {exc}"))
         return []
 def _listing_item(url, generic_title=""):
     """One release page. A site-wide title (same as the listing page's) falls back to the URL slug."""
