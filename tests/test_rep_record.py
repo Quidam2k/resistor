@@ -268,7 +268,7 @@ def test_import_senate_rejects_entire_batch_for_invalid_url(conn, tmp_path):
 @pytest.mark.parametrize("oldest,year,expected", [
     ("2023-01-01", 2020, 50), ("2010-01-01", 2020, 100),
     ("2027-01-01", 2020, 0), ("2026-01-01", 2020, 0),
-    (None, 2020, None), ("2023-01-01", None, None),
+    (None, 2020, None), ("2023-01-01", None, None), ("2023-01-01T09:28:55", 2020, 50),
 ])
 def test_coverage_pct(oldest, year, expected):
     assert rep_record.coverage_pct(oldest, year, date(2026, 1, 1)) == expected

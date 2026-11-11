@@ -57,7 +57,7 @@ def coverage_pct(oldest_date, since_year, today):
     try:
         today = Date.fromisoformat(today) if isinstance(today, str) else today
         span = (today - Date(int(since_year), 1, 1)).days
-        return max(0, min(100, round(100 * (today - Date.fromisoformat(oldest_date)).days / span))) if span > 0 else None
+        return max(0, min(100, round(100 * (today - Date.fromisoformat(oldest_date[:10])).days / span))) if span > 0 else None
     except (ValueError, TypeError): return None
 
 def iter_reps(cfg) -> list[dict]:
