@@ -151,6 +151,7 @@ def collect_crec(
                 if row is not None:
                     result["inserted"] += 1
                     saved_dates.append(item["dateIssued"])
+            conn.commit()  # per granule: never hold the write lock for a whole year (dedupe makes resume safe)
         update_progress(
             conn, rep["name"], _SOURCE, saved_dates,
             cursor=resume_cursor(conn, rep["name"], _SOURCE, year),

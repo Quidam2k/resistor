@@ -278,6 +278,7 @@ def collect_media(conn, rep, years, *, discover, fetch=fetch_article, judge=None
                         result["inserted"] += 1
                         result["verified" if verified else "reported"] += 1
                         saved_dates.append(candidate["date"])
+                conn.commit()  # per article: other collectors share the DB
         update_progress(conn, name, source, saved_dates,
                         cursor=resume_cursor(conn, name, source, year),
                         exhausted=int(year == oldest) or None, note=None)
