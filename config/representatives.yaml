@@ -17,6 +17,10 @@ federal:
       fax_portland: "503-230-1128"
       dc_address: "221 Dirksen Senate Office Bldg, Washington, DC 20510"
       term_ends: 2029
+      voteview_icpsr: 14871  # Voteview member id (House 1981-96, Senate 1996-)
+      in_office_since: 1981
+      feeds:  # rep_record statement sources (#5863)
+        - {kind: rss, url: "https://www.wyden.senate.gov/rss/feeds/?type=press"}  # titles only; pages refuse scripts
 
     - name: Jeff Merkley
       party: D
@@ -27,15 +31,23 @@ federal:
       email: "senator@merkley.senate.gov"  # Rare for federal reps to have direct email
       dc_address: "531 Hart Senate Office Bldg, Washington, DC 20510"
       term_ends: 2027
+      voteview_icpsr: 40908
+      in_office_since: 1999  # Oregon House 1999-2009
+      feeds:
+        - {kind: rss, url: "https://www.merkley.senate.gov/feed/"}  # full text in content:encoded
 
   house:
     - name: Val Hoyle
       party: D
       title: US Representative
       district: "OR-4"
+      voteview_icpsr: 22327
+      in_office_since: 2009  # Oregon House 2009-17, Labor Commissioner 2019-23
       contact_url: https://hoyle.house.gov/contact/email-val
       phone: "202-225-6416"
       dc_address: "1620 Longworth House Office Bldg, Washington, DC 20515"
+      feeds:
+        - {kind: listing, url: "https://hoyle.house.gov/media/press-releases", link_prefix: "/media/press-releases/"}
 
 state:
   senate:
@@ -43,6 +55,8 @@ state:
       party: D
       title: Oregon State Senator
       district: "SD-7"
+      or_legislator_code: "Sen Manning Jr"  # OR Legislature OData LegislatorCode
+      in_office_since: 2016
       contact_url: https://www.oregonlegislature.gov/manning
       email: "Sen.JamesManning@oregonlegislature.gov"
       phone: "503-986-1707"
@@ -53,6 +67,8 @@ state:
       party: D
       title: Oregon State Representative
       district: "HD-14"
+      or_legislator_code: "Rep Speaker Fahey"
+      in_office_since: 2017
       contact_url: https://www.oregonlegislature.gov/fahey
       email: "Rep.JulieFahey@oregonlegislature.gov"
       phone: "503-986-1414"
@@ -62,10 +78,13 @@ state:
     - name: Tina Kotek
       party: D
       title: Governor of Oregon
+      in_office_since: 2007  # Oregon House 2007-22, Governor 2023-
       contact_url: https://www.oregon.gov/gov/pages/contact-us.aspx
       email: "Governor.Kotek@oregon.gov"
       phone: "503-378-4582"
       address: "900 Court Street NE, Suite 254, Salem, OR 97301-4047"
+      feeds:
+        - {kind: listing, url: "https://apps.oregon.gov/oregon-newsroom/OR/GOV/Posts", link_prefix: "/oregon-newsroom/OR/GOV/Posts/Post/"}
       notes: "Fax may be 503-378-8970 but unverified. Email is the best channel."
 
 city:
