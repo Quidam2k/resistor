@@ -54,3 +54,7 @@ NOTE-*
 session-state.md
 CLAUDE.local.md
 config/local_paths.json
+
+# daily_refresh (#5863)
+data/logs/
+scripts/local_env.bat
