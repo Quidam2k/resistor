@@ -49,6 +49,7 @@ src/                     # Python source code
 
 A typical session follows this flow:
 
+0. **Refresh the rep record** — run `python -m src.rep_record refresh`, then `python -m src.rep_record show "<rep>"` for each rep you will write to (and `progress` to see coverage). A rep's prior public statements, bills and votes feed every letter; cite only `verified` items as quotes, label the rest "reported".
 1. **News research** — Search for significant events since last session, focusing on federal policy, legislation, executive actions, and Oregon-specific issues
 2. **Discussion** — Present findings to the user, discuss what's most actionable and where constituent letters could make a difference
 3. **Composition** — Draft focused letters (one topic per letter) incorporating:
