@@ -259,6 +259,8 @@ def _backfill_votes(conn, reps):
                               range(first, last + 1), rep["voteview_icpsr"]) or {}
             conn.commit()
             print(f"{rep['name']} {chamber}: {result.get('inserted', 0)} new votes")
+            for error in result.get("errors", []):
+                print(f"  ERROR: {error['source']}: {error['error']}")
         for error in rep["_errors"]: print(f"  ERROR: {error}")
 
 def _below_normal_priority():

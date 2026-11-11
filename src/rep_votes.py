@@ -239,19 +239,33 @@ def import_senate_votes(conn, path):
         return {"inserted": sum(_vote(conn, row) for row in rows), "errors": []}
 
 
+def _n(value):
+    """Voteview CSVs write integer ids as floats ("10713.0")."""
+    return int(float(value))
+
+
+def _session(congress, roll):
+    """Voteview leaves session blank before the 101st; derive it from the year.
+    Approximate: right for the modern two-session Congress we import (1981 on); a
+    Jan 1-3 lame-duck vote stays in the second session. Pre-1940s third sessions are not handled."""
+    if roll.get("session"):
+        return _n(roll["session"])
+    return min(int(roll["date"][:4]) - (1787 + 2 * congress) + 1, 2)
+
+
 def _official_roll(chamber, congress, roll):
     """Official roll-call page, or None where none exists online
     (senate.gov LIS starts with the 101st Congress, the Clerk's pages with 1990)."""
     number = roll.get("clerk_rollnumber")
     if not number:
         return None
-    session = roll["session"]
+    session = _session(congress, roll)
     if (chamber == "S" and congress < 101) or (chamber == "H" and roll["date"][:4] < "1990"):
         return None
     if chamber == "S":
         return ("https://www.senate.gov/legislative/LIS/roll_call_votes/"
-                f"vote{congress}{session}/vote_{congress}_{session}_{int(number):05d}.htm")
-    return f"https://clerk.house.gov/Votes/{roll['date'][:4]}{int(number)}"
+                f"vote{congress}{session}/vote_{congress}_{session}_{_n(number):05d}.htm")
+    return f"https://clerk.house.gov/Votes/{roll['date'][:4]}{_n(number)}"
 
 
 def collect_voteview(conn, rep, chamber, congresses, icpsr):
@@ -261,18 +275,20 @@ def collect_voteview(conn, rep, chamber, congresses, icpsr):
     chamber = "Senate" if letter == "S" else "House"
     source = f"votes:voteview-{chamber.lower()}"
     congresses = sorted({int(n) for n in congresses}, reverse=True)
+    icpsr = _n(icpsr)
     with _source(conn, rep["name"], source) as result:
         for congress in congresses:
             dates = []
             base = "https://voteview.com/static/data/out"
-            rolls = {int(r["rollnumber"]): r for r in csv.DictReader(io.StringIO(
-                fetch_text(f"{base}/rollcalls/{letter}{congress}_rollcalls.csv")))}
+            tag = f"{letter}{congress:03d}"
+            rolls = {_n(r["rollnumber"]): r for r in csv.DictReader(io.StringIO(
+                fetch_text(f"{base}/rollcalls/{tag}_rollcalls.csv")))}
             votes = csv.DictReader(io.StringIO(
-                fetch_text(f"{base}/votes/{letter}{congress}_votes.csv")))
+                fetch_text(f"{base}/votes/{tag}_votes.csv")))
             for v in votes:
-                if int(v["icpsr"]) != int(icpsr):
+                if _n(v["icpsr"]) != icpsr:
                     continue
-                cast = int(v["cast_code"])
+                cast = _n(v["cast_code"])
                 if cast == 0:
                     continue
                 # Voteview cast codes: 1-3 yea, 4-6 nay, 7-8 present, 9 not voting.
@@ -280,11 +296,12 @@ def collect_voteview(conn, rep, chamber, congresses, icpsr):
                         6: "Nay", 7: "Present", 8: "Present", 9: "Not Voting"}.get(cast)
                 if vote is None:
                     continue
-                roll = rolls[int(v["rollnumber"])]
-                url = f"https://voteview.com/rollcall/R{letter}{congress}{int(roll['rollnumber']):04d}"
+                number = _n(v["rollnumber"])
+                roll = rolls[number]
+                url = f"https://voteview.com/rollcall/R{tag}{number:04d}"
                 row = dict(zip(VOTE_COLUMNS, (
                     rep["name"], roll["date"], roll.get("bill_number") or None,
-                    roll.get("vote_desc"), vote, chamber, f"{congress}-{roll['session']}",
+                    roll.get("vote_desc"), vote, chamber, f"{congress}-{_session(congress, roll)}",
                     url, _official_roll(letter, congress, roll), roll.get("vote_question"))))
                 if row["roll_url"] and _vote_exists(conn, rep["name"], row["roll_url"]):
                     continue  # already stored from senate.gov or the Clerk
@@ -292,7 +309,7 @@ def collect_voteview(conn, rep, chamber, congresses, icpsr):
                     result["inserted"] += 1
                     dates.append(roll["date"])
             update_progress(conn, rep["name"], source, dates, cursor=str(congress),
-                            exhausted=int(congress == congresses[-1]))
+                            exhausted=int(congress == congresses[-1]), note="")  # clears a stale error
     return result
 
 

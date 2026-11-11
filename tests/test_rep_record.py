@@ -203,6 +203,21 @@ def test_bill_url_ordinals(congress, kind, number, path):
     )
 
 
+def test_voteview_session_blank_derived_from_year():
+    assert rep_votes._session(97, {"session": "", "date": "1982-03-01"}) == 2
+    assert rep_votes._session(119, {"session": "1.0", "date": "2025-01-09"}) == 1
+
+
+def test_voteview_pads_congress_in_filenames(conn, monkeypatch):
+    seen = []
+    def fake(url):
+        seen.append(url)
+        return "rollnumber,date,session,clerk_rollnumber\n" if "rollcalls" in url else "icpsr,rollnumber,cast_code\n"
+    monkeypatch.setattr(rep_votes, "fetch_text", fake)
+    rep_votes.collect_voteview(conn, {"name": "Ron Wyden"}, "S", [99], 14871)
+    assert seen[0].endswith("/S099_rollcalls.csv") and seen[1].endswith("/S099_votes.csv")
+
+
 def test_bill_url_unknown_type():
     assert rep_votes.bill_url(119, "UNKNOWN", 1) is None
 
@@ -214,8 +229,8 @@ def test_collect_voteview_and_progress(conn, monkeypatch):
 3,2026-01-07,2,43,,On Motion,Third motion,Passed,70,30
 """
     votes = """congress,chamber,icpsr,rollnumber,cast_code
-119,Senate,14871,1,1
-119,Senate,14871,2,6
+119,Senate,14871.0,1,1.0
+119,Senate,14871,2.0,6
 119,Senate,99999,1,4
 119,Senate,14871,3,0
 """
