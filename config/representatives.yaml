@@ -22,6 +22,7 @@ federal:
       feeds:  # rep_record statement sources (#5863)
         - {kind: rss, url: "https://www.wyden.senate.gov/rss/feeds/?type=press"}  # titles only; pages refuse scripts
       record_gaps: "House-era press releases 1981-96; floor text before 1994 (scanned volumes only)"
+      youtube_slugs: ["ron-wyden"]  # official channel, captions via Pantheon youtube_watch
 
     - name: Jeff Merkley
       party: D
@@ -37,6 +38,7 @@ federal:
       feeds:
         - {kind: rss, url: "https://www.merkley.senate.gov/feed/"}  # full text in content:encoded
       record_gaps: "Oregon House 1999-2006 votes and bills (OLIS OData starts 2007); Oregon House floor/committee video"
+      youtube_slugs: ["jeff-merkley"]  # official channel, captions via Pantheon youtube_watch
 
   house:
     - name: Val Hoyle
@@ -51,6 +53,7 @@ federal:
       feeds:
         - {kind: listing, url: "https://hoyle.house.gov/media/press-releases", link_prefix: "/media/press-releases/"}
       record_gaps: "Oregon House 2009-17 and Labor Commissioner 2019-23 records; OLIS floor/committee video and minutes"
+      youtube_slugs: ["val-hoyle"]  # official channel, captions via Pantheon youtube_watch
 
 state:
   senate:
