@@ -5,6 +5,7 @@ import ctypes
 import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -136,6 +137,15 @@ def build_prompt(rep, year, topic=None):
     )
 
 
+_TAG = re.compile(r'["\u201d]\s*,?[^"\u201c\u201d]{0,80}?\b(?:said|says|added|told|wrote|noted|continued)\b[^"\u201c\u201d]*$')
+
+
+def clean_quote(quote):
+    """Drop a trailing dialogue tag the model copied in: '...factor," Wyden said.' -> '...factor'."""
+    match = _TAG.search(quote)
+    return quote[:match.start()].rstrip(" ,") if match else quote
+
+
 def parse_candidates(text, year):
     try:
         items, _ = json.JSONDecoder().raw_decode(text[text.index("["):])
@@ -161,7 +171,8 @@ def parse_candidates(text, year):
         quotes = item.get("quotes")
         if not isinstance(quotes, list):
             continue
-        quotes = [q.strip() for q in quotes if isinstance(q, str) and len(q.strip()) >= 25][:5]
+        quotes = [clean_quote(q.strip()) for q in quotes if isinstance(q, str)]
+        quotes = [q for q in quotes if len(q) >= 25][:5]
         if not quotes:
             continue
         kind = str(item.get("kind", "article")).strip().lower()

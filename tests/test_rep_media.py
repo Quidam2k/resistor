@@ -450,3 +450,12 @@ def test_credit_backend_requires_credit_source_environment(monkeypatch):
 @pytest.mark.parametrize(("name", "expected"), [("James Manning Jr.", "Manning"), ("Ron Wyden", "Wyden"), ("Cher", "Cher")])
 def test_surname_drops_generational_suffix(name, expected):
     assert rep_media.surname(name) == expected
+
+
+@pytest.mark.parametrize(("raw", "expected"), [
+    ('It\u2019s a very significant factor," Wyden said.', "It\u2019s a very significant factor"),
+    ("Never bet against Oregon,\u201d he said after the meeting.", "Never bet against Oregon"),
+    ("A plain quote with no tag at all, which stays.", "A plain quote with no tag at all, which stays."),
+])
+def test_clean_quote_drops_dialogue_tag(raw, expected):
+    assert rep_media.clean_quote(raw) == expected
