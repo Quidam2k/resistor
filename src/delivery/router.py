@@ -11,7 +11,9 @@ from src.delivery.mail_sender import send_letter
 DELIVERY_DEFAULTS = {
     "James Manning Jr.": {"channel": "email", "address": "Sen.JamesManning@oregonlegislature.gov"},
     "Julie Fahey": {"channel": "email", "address": "Rep.JulieFahey@oregonlegislature.gov"},
-    "Jeff Merkley": {"channel": "email", "address": "senator@merkley.senate.gov",
+    # Fax, not email: no public source lists senator@merkley.senate.gov (his office takes
+    # a web form), and #85 failed on that channel (#6411, 2026-11-20). Address kept for reference.
+    "Jeff Merkley": {"channel": "fax", "address": "senator@merkley.senate.gov",
                      "fax_number": "202-228-3997",
                      "mail_address": {
                          "name": "Senator Jeff Merkley",
@@ -151,7 +153,8 @@ def show_delivery_plan(recipients: list[str]) -> str:
     for name in recipients:
         info = get_delivery_info(name)
         channel = info.get("channel", "unknown")
-        detail = (info.get("address") or info.get("fax_number") or info.get("url")
-                  or (info.get("mail_address") or {}).get("address_line1") or "")
+        detail = {"email": info.get("address"), "fax": info.get("fax_number"),
+                  "web_form": info.get("url"),
+                  "mail": (info.get("mail_address") or {}).get("address_line1")}.get(channel) or ""
         lines.append(f"  {name}: {channel} -> {detail}")
     return "\n".join(lines)
