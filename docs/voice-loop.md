@@ -23,8 +23,10 @@ message could fire a real letter.
 | Status | `python -m src.interpreter status ID` | Confirms sent or failed after the click. |
 | Log | `python -m src.interpreter log --notes "..."` | Records the session row and `data/sessions/<date>-voice-block.md`, then prints today's Resistor goal id. The assistant ticks it with the host app's complete-goal tool; this tool never does. |
 
-Drafting rules still apply: one topic, no em dashes, invite a reply with the
-rep's reasoning, reference prior correspondence. Any vote or bill claim cites
+Drafting rules still apply: one topic, no em dashes, invite the rep's reasoning
+and name where to send it (the closer `reply_line()` supplies once
+`config/user.yaml` has `email:`; never a bare "please reply", since a fax cannot
+reply; the lint warns on it), reference prior correspondence. Any vote or bill claim cites
 the `voting_records#` or `asks#` row from the brief, never model memory.
 
 ## Rehearsing without sending

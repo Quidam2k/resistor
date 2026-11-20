@@ -214,3 +214,29 @@ def test_lint_blocks_urls():
     assert any("URL" in e for e in errors)
     errors, _ = interpreter.lint_letter(_body("Details at www.example.org today."), {"bills": []})
     assert any("URL" in e for e in errors)
+
+
+def test_lint_warns_on_reply_ask_without_channel():
+    item = {"bills": ["HR.6589"]}
+    _, w = interpreter.lint_letter(_body("Please reply with your reasoning."), item)
+    assert any("where to send" in x for x in w)
+    _, w = interpreter.lint_letter(
+        _body("Please reply with your reasoning. Write to me at a@b.org."), item)
+    assert not any("where to send" in x for x in w)
+    _, w = interpreter.lint_letter(_body("Your office responded in May."), item)
+    assert not any("where to send" in x for x in w)
+
+
+def test_reply_line_and_format_letter(monkeypatch):
+    from src import letter
+    base = {"name": "A B", "address": "1 St", "city": "Eugene", "state": "OR", "zip": "97401"}
+    assert letter.reply_line(base) == ""
+    assert letter.reply_line({**base, "email": " "}) == ""
+    with_email = {**base, "email": "x@example.org"}
+    assert letter.reply_line(with_email) == "You can reach me at x@example.org."
+    monkeypatch.setattr(letter, "load_user", lambda: base)
+    plain = letter.format_letter("Ron Wyden", "Senator", "t", "Body.")
+    assert plain.endswith("Eugene, OR 97401")
+    monkeypatch.setattr(letter, "load_user", lambda: with_email)
+    out = letter.format_letter("Ron Wyden", "Senator", "t", "Body.")
+    assert out == plain + "\n\nYou can reach me at x@example.org."

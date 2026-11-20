@@ -36,6 +36,17 @@ def _letter_stem(date_str: str, recipient_name: str, topic: str) -> str:
     return _UNSAFE_FILENAME_CHARS.sub("", f"{date_str}-{safe_recipient}-{safe_topic}")
 
 
+def reply_line(user: dict | None = None) -> str:
+    """Where a rep's office can answer: 'You can reach me at <email>.'
+
+    Empty until config/user.yaml has `email:` (Todd names the address; never
+    guess one). A fax or paper letter cannot say 'reply here', so the closer
+    must name a channel (#6413).
+    """
+    email = str((user if user is not None else load_user()).get("email") or "").strip()
+    return f"You can reach me at {email}." if email else ""
+
+
 def format_letter(recipient_name: str, recipient_title: str, topic: str,
                   body: str, include_address: bool = True) -> str:
     """Format a complete letter with constituent header.

@@ -48,6 +48,15 @@ EMOTION_RE = re.compile(r"\b(" + "|".join([
     r"I was there", r"I attended", r"I marched",
 ]) + r")\b", re.I)
 SENTENCE_RE = re.compile(r"[^.!?\n]+[.!?]?")
+
+# #6413: a fax or mailed letter cannot "reply here"; an ask for a reply must name
+# the channel. Warning only.
+REPLY_ASK_RE = re.compile(
+    r"\b(please (reply|respond|write)|(reply|respond|write) (to me|back|with)|"
+    r"your (reply|response))\b", re.I)
+REPLY_CHANNEL_RE = re.compile(
+    r"(e-?mail|\S+@\S+|phone|call me|reach me|by (mail|letter)|"
+    r"(address|number) (above|below)|at the address)", re.I)
 TODD_HEADER = "**Todd-authored:** "
 
 
@@ -241,6 +250,10 @@ def lint_letter(body: str, item: dict,
         errors.append(f"constituent name '{user['name']}' missing")
     if str(user["zip"]) not in body:
         errors.append("constituent address/zip missing")
+    if REPLY_ASK_RE.search(body) and not REPLY_CHANNEL_RE.search(body):
+        warnings.append("asks for a reply without naming where to send it; a "
+                        "fax/mail letter needs the channel, e.g. 'write to me at "
+                        "<email>' (#6413)")
     known = {_bill_key(b) for b in item.get("bills", [])}
     for m in BILL_RE.finditer(body):
         if _bill_key(m.group(0)) not in known:
