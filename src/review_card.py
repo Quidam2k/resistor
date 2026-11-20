@@ -61,7 +61,8 @@ def common_block(common: dict[str, str], n_letters: int) -> str:
 
 
 def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str = "",
-               common: dict[str, str] | None = None, common_md: str = "") -> str:
+               common: dict[str, str] | None = None, common_md: str = "",
+               buttons: bool = False) -> str:
     u = load_user()
     sender = f"{u['name']}, {u['city']}, {u['state']} {u['zip']}"
     paras = {l["id"]: l["body"].split("\n\n") for l in letters}
@@ -103,6 +104,8 @@ def build_card(letters: list[dict], intro: str = "", tag: str = "S", topic: str 
         for ref, p in own:
             out += [f"<!-- p:{ref} -->", p, ""]
         out += record_block(l["recipient"], l.get("topic") or "")
+        if buttons:  # file_for_review wants a decision card's buttons on it at filing (#12882)
+            out += [f"[[action:approve:{lid}]]", ""]
         out += ["---", ""]
     return "\n".join(out).rstrip("\n-").rstrip() + "\n"
 
@@ -147,7 +150,11 @@ def main(argv=None) -> int:
     ap.add_argument("--expires", required=True)
     ap.add_argument("--attach", action="store_true",
                     help="re-attach approve buttons (letters must be pending_approval)")
+    ap.add_argument("--not-duplicate-of", help="card the dedup guard matched, when this is a new subject")
+    ap.add_argument("--why", help="one line: why it is not a duplicate (with --not-duplicate-of)")
     a = ap.parse_args(argv)
+    if bool(a.not_duplicate_of) != bool(a.why):
+        raise SystemExit("--not-duplicate-of and --why go together")
     groups = [[get_letter_by_id(int(x)) for x in g.split(",")] for g in a.ids.split("/")]
     letters = [l for g in groups for l in g]
     if None in letters:
@@ -157,8 +164,11 @@ def main(argv=None) -> int:
     body = "\n---\n\n".join(
         build_card(g, intro if i == 0 else "", tag="S" if len(groups) == 1 else chr(65 + i),
                    topic="" if len(groups) == 1 else f" for {g[0]['topic']}", common=common,
-                   common_md=common_block(common, len(letters)) if i == 0 else "")
+                   common_md=common_block(common, len(letters)) if i == 0 else "",
+                   buttons=a.attach)
         for i, g in enumerate(groups))
+    if a.attach and len(letters) > 1:  # same placement card_action_attach uses
+        body = body.rstrip("\n") + "\n\n---\n\n[[action:approve_all]]\n"
     ids = ",".join(str(l["id"]) for l in letters)
     errs = verify_card(body, letters)
     if errs:
@@ -166,8 +176,12 @@ def main(argv=None) -> int:
     tmp = REVIEW_DIR.parent / f".review_card_{a.filename}"
     tmp.write_text(body, encoding="utf-8")
     try:
+        # --update only rewrites an existing card; file_for_review refuses it for a new one.
+        update = ["--update"] if (REVIEW_DIR / a.filename).exists() else []
+        if a.not_duplicate_of:
+            update += ["--not-duplicate-of", a.not_duplicate_of, "--why", a.why]
         subprocess.run([sys.executable, str(PANTHEON / "scripts" / "file_for_review.py"),
-                        "--update", "--filename", a.filename, "--type", a.type,
+                        *update, "--filename", a.filename, "--type", a.type,
                         "--title", a.title, "--expires", a.expires, "--body-file", str(tmp)],
                        check=True, cwd=PANTHEON)
     finally:
