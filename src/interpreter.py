@@ -26,7 +26,7 @@ from src.config import DATA_DIR, load_user, local_setting
 from src.congress_api import MEMBER_IDS
 from src.delivery.router import get_delivery_info
 from src.letter import (get_context_for_letter, parse_letter_markdown,
-                        write_letter_markdown)
+                        reply_line, write_letter_markdown)
 from src.outbox import estimate_cost_cents, queue_letter_from_markdown
 
 MENU_PATH = DATA_DIR / "runtime" / "interpreter_menu.json"
@@ -215,9 +215,14 @@ def cmd_pick(args):
     if channel != "mail" and info.get("mail_address"):
         print("  (Lob mail also possible: draft with --channel mail)")
     print(get_context_for_letter(recipient, None))
+    reply = reply_line()
+    ask = (f"invite their reasoning and name where to send it (close with: "
+           f"\"{reply}\")" if reply else
+           "invite their reasoning but never a bare \"please reply\" (a fax "
+           "cannot reply); config/user.yaml has no email yet, so ask Todd "
+           "where replies should go")
     print("\nRules: one topic; no em dashes; fact-check against the web before "
-          "queueing; invite a reply with their reasoning; cite sources above for "
-          "any vote or bill claim.")
+          f"queueing; {ask}; cite sources above for any vote or bill claim.")
 
 
 # ---------------------------------------------------------------------------

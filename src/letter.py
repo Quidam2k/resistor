@@ -78,6 +78,8 @@ def format_letter(recipient_name: str, recipient_title: str, topic: str,
         f"{user['name']}\n"
         f"{user['city']}, {user['state']} {user['zip']}"
     )
+    if reply := reply_line(user):
+        parts.append(reply)
 
     return "\n\n".join(parts)
 
