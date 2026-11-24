@@ -292,6 +292,10 @@ def lint_letter(body: str, item: dict,
         errors.append(f"constituent name '{user['name']}' missing")
     if str(user["zip"]) not in body:
         errors.append("constituent address/zip missing")
+    for key in ("phone", "email"):
+        if str(user.get(key) or "").strip() and str(user[key]).strip() not in body:
+            warnings.append(f"the {key} in config/user.yaml is not in the letter header "
+                            "(Todd wants address, phone and email on every letter)")
     if REPLY_ASK_RE.search(body) and not REPLY_CHANNEL_RE.search(body):
         warnings.append("asks for a reply without naming where to send it; a "
                         "fax/mail letter needs the channel, e.g. 'write to me at "

@@ -47,6 +47,15 @@ def reply_line(user: dict | None = None) -> str:
     return f"You can reach me at {email}." if email else ""
 
 
+def contact_header(user: dict | None = None) -> str:
+    """Name, mailing address, then phone and email when config/user.yaml has them (Todd msg 67333)."""
+    user = user if user is not None else load_user()
+    lines = [str(user["name"]), str(user["address"]),
+             f"{user['city']}, {user['state']} {user['zip']}"]
+    lines += [str(user[k]).strip() for k in ("phone", "email") if str(user.get(k) or "").strip()]
+    return "\n".join(lines)
+
+
 def format_letter(recipient_name: str, recipient_title: str, topic: str,
                   body: str, include_address: bool = True) -> str:
     """Format a complete letter with constituent header.
@@ -64,11 +73,7 @@ def format_letter(recipient_name: str, recipient_title: str, topic: str,
     parts = []
 
     if include_address:
-        parts.append(
-            f"{user['name']}\n"
-            f"{user['address']}\n"
-            f"{user['city']}, {user['state']} {user['zip']}"
-        )
+        parts.append(contact_header(user))
 
     parts.append(date_str)
     parts.append(f"Dear {recipient_title} {recipient_name},")

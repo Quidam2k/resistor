@@ -293,4 +293,8 @@ def test_reply_line_and_format_letter(monkeypatch):
     assert plain.endswith("Eugene, OR 97401")
     monkeypatch.setattr(letter, "load_user", lambda: with_email)
     out = letter.format_letter("Ron Wyden", "Senator", "t", "Body.")
-    assert out == plain + "\n\nYou can reach me at x@example.org."
+    assert out.startswith("A B\n1 St\nEugene, OR 97401\nx@example.org\n\n")
+    assert out.endswith("Eugene, OR 97401\n\nYou can reach me at x@example.org.")
+    full = {**with_email, "phone": "555-010-0100"}
+    assert letter.contact_header(full) == "A B\n1 St\nEugene, OR 97401\n555-010-0100\nx@example.org"
+    assert letter.contact_header(base) == "A B\n1 St\nEugene, OR 97401"
