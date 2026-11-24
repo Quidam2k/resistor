@@ -28,6 +28,11 @@ echo --- donors (FEC, weekly gate) %TIME% >> "%LOG%"
 "%RESISTOR_PYTHON%" -m src.rep_donors refresh >> "%LOG%" 2>&1
 echo exit %ERRORLEVEL% >> "%LOG%"
 
+rem ORESTAR donors for the Oregon state reps: same 7-day gate per rep (#6828).
+echo --- donors (ORESTAR, weekly gate) %TIME% >> "%LOG%"
+"%RESISTOR_PYTHON%" -m src.state_donors refresh >> "%LOG%" 2>&1
+echo exit %ERRORLEVEL% >> "%LOG%"
+
 if defined RESISTOR_YOUTUBE_ROOT (
   echo --- youtube captions %TIME% >> "%LOG%"
   "%RESISTOR_PYTHON%" -m src.rep_youtube >> "%LOG%" 2>&1

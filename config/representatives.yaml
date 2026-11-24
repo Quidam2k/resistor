@@ -65,6 +65,7 @@ state:
       title: Oregon State Senator
       district: "SD-7"
       or_legislator_code: "Sen Manning Jr"  # OR Legislature OData LegislatorCode
+      orestar_committee_id: 18375  # ORESTAR committee id: Friends of James Manning (state_donors, #6828)
       in_office_since: 2016
       contact_url: https://www.oregonlegislature.gov/manning
       email: "Sen.JamesManning@oregonlegislature.gov"
@@ -78,6 +79,7 @@ state:
       title: Oregon State Representative
       district: "HD-14"
       or_legislator_code: "Rep Speaker Fahey"
+      orestar_committee_id: 17469  # ORESTAR committee id: Friends of Julie Fahey (state_donors, #6828)
       in_office_since: 2017
       contact_url: https://www.oregonlegislature.gov/fahey
       email: "Rep.JulieFahey@oregonlegislature.gov"
@@ -87,6 +89,7 @@ state:
 
   governor:
     - name: Tina Kotek
+      orestar_committee_id: 4792  # ORESTAR committee id: Friends of Tina Kotek (state_donors, #6828)
       party: D
       title: Governor of Oregon
       in_office_since: 2007  # Oregon House 2007-22, Governor 2023-

@@ -208,8 +208,17 @@ def refresh_rep(conn, rep, since_cycle=DEFAULT_SINCE_CYCLE, force=False):
 def _money(value): return f"${value:,.0f}"
 
 
+def _source_for(conn, rep):
+    """(label, footer) by where the rep's rows came from: state reps are ORESTAR, federal reps are FEC."""
+    if conn.execute("SELECT 1 FROM rep_donors WHERE rep=? AND url LIKE 'https://secure.sos.state.or.us/%' LIMIT 1", (rep,)).fetchone():
+        return "ORESTAR-reported", ("Source: ORESTAR (Oregon Secretary of State). Names are filer-supplied; totals are lower bounds "
+                                    "(organizational and $1,000+ individual gifts only); treat as reported, not verified.")
+    return "FEC-reported", "Source: FEC (api.open.fec.gov). Employer/industry labels come from donor-supplied text; treat as reported, not verified."
+
+
 def show(conn, rep, limit=8):
-    print(f"FEC-reported finances for {rep}")
+    label, footer = _source_for(conn, rep)
+    print(f"{label} finances for {rep}")
     for t in _dicts(conn, "SELECT * FROM rep_finance_totals WHERE rep=? ORDER BY cycle DESC", (rep,)):
         print(f"{t['cycle']}: receipts {_money(t['receipts'])}, individual itemized {_money(t['individual_itemized'])}, "
               f"unitemized {_money(t['individual_unitemized'])}, PAC {_money(t['pac_contributions'])}, "
@@ -218,7 +227,7 @@ def show(conn, rep, limit=8):
             for d in _dicts(conn, "SELECT * FROM rep_donors WHERE rep=? AND cycle=? AND kind=? ORDER BY amount DESC LIMIT ?",
                             (rep, t["cycle"], kind, limit)):
                 print(f"  {'pac (largest itemized receipts)' if kind == 'pac' else kind} | {d['donor']}{' (' + d['note'] + ')' if d['note'] else ''} | {_money(d['amount'])} | n={d['n']}")
-    print("Source: FEC (api.open.fec.gov). Employer/industry labels come from donor-supplied text; treat as reported, not verified.")
+    print(footer)
 
 
 def _has_word(low, word):
@@ -245,14 +254,15 @@ def conflicts(conn, rep):
         for sector in sector_for(d["donor"]):
             bucket = sectors.setdefault(sector, {})
             bucket[d["donor"]] = bucket.get(d["donor"], 0.0) + d["amount"]
-    print(f"FEC-reported donor sectors for {rep} (cycles {', '.join(map(str, cycles)) or 'none'}); sector labels are keyword heuristics, not findings.")
+    label, _footer = _source_for(conn, rep)
+    print(f"{label} donor sectors for {rep} (cycles {', '.join(map(str, cycles)) or 'none'}); sector labels are keyword heuristics, not findings.")
     for sector, donors in sorted(sectors.items(), key=lambda kv: -sum(kv[1].values())):
         top = sorted(donors.items(), key=lambda kv: -kv[1])[:3]
         hooks = sorted({c for c in committees if ":" not in c
                         for key, secs in JURISDICTION.items() if key in c.lower() and sector in secs})
         print(f"{sector}: {_money(sum(donors.values()))} | " + "; ".join(f"{n} {_money(a)}" for n, a in top)
               + "".join(f" <- sits on {h}" for h in hooks))
-    print("Source: FEC (api.open.fec.gov); reported, not verified.")
+    print(_footer.split(". ")[0] + "; reported, not verified.")
 
 
 TOPIC_STOPWORDS = {"oregon", "national", "action", "committee", "political", "america", "american", "united", "states",
