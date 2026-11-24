@@ -229,6 +229,31 @@ def cmd_pick(args):
 # draft
 # ---------------------------------------------------------------------------
 
+URL_IN_PROSE_RE = re.compile(r"https?://\S+|\bwww\.\S+")
+MARKER_RE = re.compile(r"\[(\d{1,2})\]")
+FOOTNOTE_RE = re.compile(r"^\s*\[(\d{1,2})\]\s*(.+)$")
+
+
+def split_footnotes(body: str) -> tuple[str, list[tuple[str, str]]]:
+    """Split a letter into (prose, [(n, text)]) at a closing 'Sources' paragraph.
+
+    The footnote block is the LAST paragraph; its first line is 'Sources' (or
+    'Sources:'), then '[n] source, typeable-url' lines. URLs are allowed only
+    there (Todd, msg 67288); fax and mail can't click, so keep them short and
+    without https://. Returns (body, []) when there is no such paragraph.
+    """
+    paras = re.split(r"\n\s*\n", body.rstrip())
+    last = paras[-1].strip().splitlines() if paras else []
+    if not last or last[0].strip().rstrip(":").lower() != "sources":
+        return body, []
+    notes = []
+    for line in last[1:]:
+        m = FOOTNOTE_RE.match(line)
+        if m:
+            notes.append((m.group(1), m.group(2).strip()))
+    return "\n\n".join(paras[:-1]), notes
+
+
 def lint_letter(body: str, item: dict,
                 todd_wrote: list[str] = ()) -> tuple[list[str], list[str]]:
     """Return (errors, warnings). Errors block the draft.
@@ -239,10 +264,17 @@ def lint_letter(body: str, item: dict,
     errors, warnings = [], []
     if "\u2014" in body or "\u2013" in body:
         errors.append("contains an em/en dash (letters must not read as AI-written)")
-    url = re.search(r"https?://\S+|\bwww\.\S+", body)
+    prose, footnotes = split_footnotes(body)
+    url = URL_IN_PROSE_RE.search(prose)
     if url:
-        errors.append(f"contains a URL ({url.group(0)}); sources go to the reviewer, "
-                      "not the letter (#5863)")
+        errors.append(f"contains a URL ({url.group(0)}) in the prose; put it in the "
+                      "closing 'Sources' footnote paragraph instead (#5863, #6825)")
+    cited = {int(n) for n in MARKER_RE.findall(prose)}
+    listed = {int(n) for n, _ in footnotes}
+    for n in sorted(cited - listed):
+        warnings.append(f"[{n}] is cited in the prose but has no footnote {n}")
+    for n in sorted(listed - cited):
+        warnings.append(f"footnote {n} is listed but never cited as [{n}] in the prose")
     exempt = {s.strip() for s in todd_wrote}
     for sentence in SENTENCE_RE.findall(body):
         m = EMOTION_RE.search(sentence)

@@ -216,6 +216,36 @@ def test_lint_blocks_urls():
     assert any("URL" in e for e in errors)
 
 
+SOURCES = ("\n\nSources\n[1] Reuters, Oct 26 2026: kfgo.com/2026/10/26/spain\n"
+           "[2] S.5658: congress.gov/bill/119th-congress/senate-bill/5658")
+
+
+def test_lint_allows_urls_in_closing_sources_block():
+    body = _body("Spain moved a draft rule forward [1], and S.5658 [2] is mine.") + SOURCES
+    errors, warnings = interpreter.lint_letter(body, {"bills": ["S.5658"]})
+    assert not any("URL" in e for e in errors)
+    assert not any("footnote" in w or "cited" in w for w in warnings)
+
+
+def test_lint_still_blocks_urls_in_prose_with_footnotes():
+    body = _body("See https://example.org/x [1].") + SOURCES
+    errors, _ = interpreter.lint_letter(body, {"bills": []})
+    assert any("URL" in e for e in errors)
+
+
+def test_lint_warns_on_orphan_markers_and_footnotes():
+    body = _body("Spain moved ahead [3].") + SOURCES
+    _, warnings = interpreter.lint_letter(body, {"bills": ["S.5658"]})
+    assert any("[3]" in w and "no footnote" in w for w in warnings)
+    assert any("footnote 1" in w and "never cited" in w for w in warnings)
+
+
+def test_lint_sources_must_be_last_paragraph():
+    body = _body("A claim [1].") + "\n\nSources\n[1] kfgo.com/x\n\nSincerely,\nTodd"
+    prose, notes = interpreter.split_footnotes(body)
+    assert notes == [] and "Sources" in prose
+
+
 def test_lint_warns_on_reply_ask_without_channel():
     item = {"bills": ["HR.6589"]}
     _, w = interpreter.lint_letter(_body("Please reply with your reasoning."), item)
