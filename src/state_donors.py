@@ -21,7 +21,7 @@ SOURCE = "donors:orestar"
 PACE_SECONDS = 1.0
 WEEK_SECONDS = 7 * 86400
 DEFAULT_SINCE_YEAR = 2018
-MAX_PAGES = 20  # 50 rows per page
+MAX_PAGES = 40  # 50 rows per page; a capped group is reported as a warning, never silently
 PAGE_ROWS = 50
 ROWS_PER_KIND = 25
 STATE_HINTS = {"OR_Senate", "OR_House", "Governor"}
@@ -136,19 +136,20 @@ def _top(agg):
 
 
 def fetch_year(client, committee_id, year):
-    """-> (donor rows [(kind, donor, amount, n)], latest tran date 'YYYY-MM-DD' or '')."""
+    """-> (donor rows [(kind, donor, amount, n)], latest tran date 'YYYY-MM-DD' or '', groups that hit the page cap)."""
     start, end = f"01/01/{year}", f"12/31/{year}"
-    out, latest = [], ""
+    out, latest, capped = [], "", []
     for kind, types, amount_from in GROUPS:
         merged = []
         for ctype in types:
-            _total, rows, _truncated = client.search(committee_id, start, end, ctype, amount_from)
+            _total, rows, truncated = client.search(committee_id, start, end, ctype, amount_from)
             merged += rows
+            if truncated: capped.append(f"{year} {kind}/{ctype}")
         for r in merged:
             m, d, y = r["date"].split("/")
             latest = max(latest, f"{y}-{m}-{d}")
         out += [(kind, name, s, c) for name, s, c in _top(aggregate(merged))]
-    return out, latest
+    return out, latest, capped
 
 
 def _committee_url(committee_id):
@@ -176,11 +177,12 @@ def refresh_rep(conn, rep, since_year=DEFAULT_SINCE_YEAR, force=False, client=No
     client = client or OrestarClient()
     this_year = datetime.now().year
     have = {r[0] for r in conn.execute("SELECT DISTINCT cycle FROM rep_donors WHERE rep=? AND url LIKE ?", (name, URL_PREFIX))}
-    done, rows_total, errors = [], 0, []
+    done, rows_total, errors, warnings = [], 0, [], []
     for year in range(since_year, this_year + 1):
         if year in have and year != this_year and not force: continue
         try:
-            rows, latest = fetch_year(client, committee_id, year)
+            rows, latest, capped = fetch_year(client, committee_id, year)
+            warnings += [f"{c} hit the {MAX_PAGES * PAGE_ROWS}-row cap; sums for it may be low" for c in capped]
             _store_year(conn, name, year, committee_id, rows, latest)
             done.append(f"{year}-12-31"); rows_total += len(rows)
         except (requests.RequestException, RuntimeError, ValueError, AttributeError, sqlite3.Error) as exc:
@@ -188,7 +190,7 @@ def refresh_rep(conn, rep, since_year=DEFAULT_SINCE_YEAR, force=False, client=No
     # A weekly stamp only counts when nothing failed; otherwise the next run retries.
     if not errors: update_progress(conn, name, SOURCE, done, note=f"{rows_total} rows")
     conn.commit()
-    return {"cycles": len(done), "rows": rows_total, "errors": errors}
+    return {"cycles": len(done), "rows": rows_total, "errors": errors, "warnings": warnings}
 
 
 def main(argv=None):
@@ -212,6 +214,7 @@ def main(argv=None):
                 conn.rollback(); result = {"errors": [_safe(exc)]}
             if result.get("skipped"): print(f"{rep['name']}: skipped (pulled <7 days ago)")
             else: print(f"{rep['name']}: {result.get('cycles', 0)} cycles, {result.get('rows', 0)} rows")
+            for warning in result.get("warnings", []): print(f"  WARNING: {warning}")
             for error in result.get("errors", []): print(f"  ERROR: {error}"); failed = True
         return int(failed)
     finally: conn.close()

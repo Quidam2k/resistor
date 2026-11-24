@@ -33,6 +33,11 @@ echo --- donors (ORESTAR, weekly gate) %TIME% >> "%LOG%"
 "%RESISTOR_PYTHON%" -m src.state_donors refresh >> "%LOG%" 2>&1
 echo exit %ERRORLEVEL% >> "%LOG%"
 
+rem House stock-trade filings index (PTRs) for House members, weekly gate (#6828).
+echo --- trades (House Clerk, weekly gate) %TIME% >> "%LOG%"
+"%RESISTOR_PYTHON%" -m src.rep_trades refresh >> "%LOG%" 2>&1
+echo exit %ERRORLEVEL% >> "%LOG%"
+
 if defined RESISTOR_YOUTUBE_ROOT (
   echo --- youtube captions %TIME% >> "%LOG%"
   "%RESISTOR_PYTHON%" -m src.rep_youtube >> "%LOG%" 2>&1

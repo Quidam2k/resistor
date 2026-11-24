@@ -69,7 +69,7 @@ def conn():
 def test_refresh_stores_rows_and_totals(conn):
     client = FakeClient()
     result = state_donors.refresh_rep(conn, dict(REP), since_year=2026, force=True, client=client)
-    assert result["errors"] == [] and result["cycles"] == 1
+    assert result["errors"] == [] and result["warnings"] == [] and result["cycles"] == 1
     rows = list(conn.execute("SELECT * FROM rep_donors WHERE rep=? AND cycle=2026", (REP["name"],)))
     assert [(r["kind"], r["donor"], r["amount"], r["n"]) for r in rows] == [("employer", "Acme Pharma & Co", 6500.5, 2)]
     assert rows[0]["url"] == "https://secure.sos.state.or.us/orestar/sooDetail.do?cneCommitteeId=999"
@@ -120,3 +120,12 @@ def test_client_paging_uses_next_after_first_page(monkeypatch):
     total, rows, truncated = client.search(999, "01/01/2026", "12/31/2026", "B")
     # page 0 = 'search', page 1 = 'next'; page 1 repeats the same ids so paging stops with no new rows
     assert seen == ["search", "next"] and len(rows) == 3 and total == 3 and not truncated
+
+
+def test_capped_group_is_a_warning_not_silent(conn):
+    class Capped(FakeClient):
+        def search(self, committee_id, start, end, ctype, amount_from=None):
+            total, rows, _t = super().search(committee_id, start, end, ctype, amount_from)
+            return total, rows, ctype == "B"
+    result = state_donors.refresh_rep(conn, dict(REP), since_year=2026, force=True, client=Capped())
+    assert result["errors"] == [] and result["warnings"] == ["2026 employer/B hit the 2000-row cap; sums for it may be low"]

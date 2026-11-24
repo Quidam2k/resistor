@@ -324,8 +324,11 @@ def _show(conn, rep, limit):
         print(f"{row['vote_date']} | {row['bill_id'] or ''} | {row['vote']} | {row['question'] or row['bill_title'] or ''} | {row['roll_url'] or row['source_url'] or ''}")
     from src import rep_donors
     if conn.execute("SELECT 1 FROM rep_finance_totals WHERE rep=? LIMIT 1", (rep,)).fetchone():
-        print("-- donors (FEC-reported; full view: python -m src.rep_donors show/conflicts) --")
+        print(f"-- donors ({rep_donors._source_for(conn, rep)[0]}; full view: python -m src.rep_donors show/conflicts) --")
         rep_donors.show(conn, rep, limit=3)
+    from src import rep_trades
+    print("-- stock-trade filings (python -m src.rep_trades show) --")
+    rep_trades.show(conn, rep)
 
 STOPWORDS = {"about", "with", "from", "that", "this", "their", "your", "letter", "follow", "support", "oppose"}
 
