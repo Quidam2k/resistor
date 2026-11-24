@@ -96,7 +96,7 @@ def render_claims_section(checked: list[dict]) -> str:
         lines += ["| Claim | Kind | Source |", "| --- | --- | --- |"]
         for c in ok:
             lines.append(
-                f"| {_cell(c.get('claim'))} | {_cell(c.get('kind', ''))} | "
+                f"| {_cell(_san(c.get('claim')))} | {_cell(_san(c.get('kind', '')))} | "
                 f"{_cell(normalize_url(str(c.get('url') or '')))} |"
             )
     else:

@@ -180,9 +180,11 @@ def main(argv=None) -> int:
         except Exception as exc:  # advisory: say so on the card, never abort filing
             sections.append("## Claims and sources (checked before drafting)\n\n"
                             f"The claims table could not be checked ({type(exc).__name__}: "
-                            f"{exc}). Treat every outside fact in the letters as unchecked.")
+                            f"{fact_check._san(exc)[:200]}). Treat every outside fact in the letters as unchecked.")
     if a.skip_fact_check:
-        sections.append(f"## Fact check (advisory)\n\nSkipped: {a.skip_fact_check}")
+        note = f"\n\nThese letters have NO Sources list: {unsourced}." if unsourced else ""
+        sections.append("## Fact check (advisory)\n\n"
+                        f"Skipped: {fact_check._san(a.skip_fact_check)}{note}")
     else:
         result = fact_check.check_letters(letters)
         sections.append(fact_check.render_fact_check_section(result))
