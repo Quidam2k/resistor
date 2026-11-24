@@ -9,6 +9,7 @@
 federal:
   senators:
     - name: Ron Wyden
+      state: OR
       fec_candidate_id: S6OR00110  # FEC candidate id (rep_donors)
       party: D
       title: US Senator
@@ -26,6 +27,7 @@ federal:
       youtube_slugs: ["ron-wyden"]  # official channel, captions via Pantheon youtube_watch
 
     - name: Jeff Merkley
+      state: OR
       fec_candidate_id: S8OR00207  # FEC candidate id (rep_donors)
       party: D
       title: US Senator
