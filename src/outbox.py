@@ -58,7 +58,8 @@ def _lob_test_render(recipient: str, topic: str, body: str) -> str | None:
 
 
 def queue_letter(recipient: str, topic: str, body: str,
-                 channel: str = None, md_path: str = None) -> int:
+                 channel: str = None, md_path: str = None,
+                 no_outside_facts: bool = False, todd_wrote: list[str] = ()) -> int:
     """Queue a letter for human approval. Returns the letter id.
 
     Args:
@@ -68,7 +69,18 @@ def queue_letter(recipient: str, topic: str, body: str,
         channel: Delivery channel; defaults to the rep's router default
         md_path: Existing markdown file for this letter. If omitted, a new
             md file is written using the standard conventions.
+        no_outside_facts: the letter leans on no outside fact, so it needs no
+            Sources block (the same escape as `interpreter draft/queue`).
+        todd_wrote: exact sentences Todd wrote himself (exempt from the
+            feelings/presence lint).
+
+    Raises ValueError, writing nothing, when the letter fails the same lint
+    the interpreter runs, including "no Sources list" (#6825).
     """
+    from src.interpreter import lint_letter  # lazy: interpreter imports this module
+    errors, _ = lint_letter(body, {}, todd_wrote, require_sources=not no_outside_facts)
+    if errors:
+        raise ValueError("Refusing to queue: " + "; ".join(errors))
     init_db()
     channel = channel or get_delivery_info(recipient).get("channel", "unknown")
 
@@ -99,14 +111,20 @@ def queue_letter(recipient: str, topic: str, body: str,
 
 
 def queue_letter_from_markdown(md_path: str, recipient: str,
-                               channel: str = None) -> int:
+                               channel: str = None,
+                               no_outside_facts: bool = False) -> int:
     """Queue an already-written letter md file (body = text below ---)."""
     parsed = parse_letter_markdown(md_path)
     topic = parsed["headers"].get("topic", "Untitled")
     channel = channel or parsed["headers"].get("channel", "").split(" ")[0] \
         or None
-    return queue_letter(recipient, topic, parsed["body"],
-                        channel=channel, md_path=md_path)
+    from src.interpreter import TODD_HEADER
+    header = Path(md_path).read_text(encoding="utf-8").split("\n---\n", 1)[0]
+    todd_wrote = [ln[len(TODD_HEADER):] for ln in header.splitlines()
+                  if ln.startswith(TODD_HEADER)]
+    return queue_letter(recipient, topic, parsed["body"], channel=channel,
+                        md_path=md_path, no_outside_facts=no_outside_facts,
+                        todd_wrote=todd_wrote)
 
 
 def reject_letter(letter_id: int, note: str):

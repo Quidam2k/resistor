@@ -19,7 +19,7 @@ def test_web_form_approve_never_enqueues_delivery(monkeypatch):
     monkeypatch.setattr(jobs, "_dry_run_enabled", lambda: False)  # as if live
 
     letter_id = queue_letter("TEST #9454 do not send", "test", "Todd Walker 97402",
-                             channel="web_form")
+                             channel="web_form", no_outside_facts=True)
     try:
         client = webui.app.test_client()
         resp = client.post(f"/api/letter/{letter_id}/approve")

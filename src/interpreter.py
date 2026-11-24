@@ -353,7 +353,8 @@ def cmd_queue(args) -> int:
                             require_sources=not args.no_outside_facts)
     if errors:
         raise SystemExit(f"Refusing to queue: {'; '.join(errors)}")
-    letter_id = queue_letter_from_markdown(str(path), recipient)
+    letter_id = queue_letter_from_markdown(str(path), recipient,
+                                           no_outside_facts=args.no_outside_facts)
     letter = db.get_letter_by_id(letter_id)
     cost = letter.get("estimated_cost_cents") or 0
     print(f"QUEUED #{letter_id} to {recipient} via {letter['channel']} "
