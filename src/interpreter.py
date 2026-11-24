@@ -255,7 +255,8 @@ def split_footnotes(body: str) -> tuple[str, list[tuple[str, str]]]:
 
 
 def lint_letter(body: str, item: dict,
-                todd_wrote: list[str] = ()) -> tuple[list[str], list[str]]:
+                todd_wrote: list[str] = (),
+                require_sources: bool = False) -> tuple[list[str], list[str]]:
     """Return (errors, warnings). Errors block the draft.
 
     todd_wrote: exact sentences Todd wrote himself; only those are exempt
@@ -265,6 +266,10 @@ def lint_letter(body: str, item: dict,
     if "\u2014" in body or "\u2013" in body:
         errors.append("contains an em/en dash (letters must not read as AI-written)")
     prose, footnotes = split_footnotes(body)
+    if require_sources and not footnotes:
+        errors.append("no Sources list: end the letter with a 'Sources' paragraph, one "
+                      "'[n] publisher, date: link' line per outside fact (#6825); a letter "
+                      "with no outside facts passes --no-outside-facts")
     url = URL_IN_PROSE_RE.search(prose)
     if url:
         errors.append(f"contains a URL ({url.group(0)}) in the prose; put it in the "
@@ -307,7 +312,8 @@ def cmd_draft(args) -> Path | None:
     body = Path(args.body_file).read_text(encoding="utf-8").strip()
     topic = args.topic or item["topic"]
     todd_wrote = args.todd_wrote or []
-    errors, warnings = lint_letter(body, item, todd_wrote)
+    errors, warnings = lint_letter(body, item, todd_wrote,
+                                   require_sources=not args.no_outside_facts)
     for w in warnings:
         print(f"  warn: {w}")
     if errors:
@@ -339,7 +345,8 @@ def cmd_queue(args) -> int:
     todd_wrote = [ln[len(TODD_HEADER):] for ln in header.splitlines()
                   if ln.startswith(TODD_HEADER)]
     body = parse_letter_markdown(path)["body"]
-    errors, _ = lint_letter(body, {}, todd_wrote)
+    errors, _ = lint_letter(body, {}, todd_wrote,
+                            require_sources=not args.no_outside_facts)
     if errors:
         raise SystemExit(f"Refusing to queue: {'; '.join(errors)}")
     letter_id = queue_letter_from_markdown(str(path), recipient)
@@ -418,6 +425,9 @@ def cmd_log(args):
               "Jarvis, check today's journal goals.")
 
 
+NO_FACTS_HELP = "skip the Sources-list requirement: the letter leans on no outside fact"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m src.interpreter")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -429,9 +439,11 @@ def main(argv=None):
     p.add_argument("--todd-wrote", action="append", metavar="SENTENCE",
                    help="exact sentence Todd wrote himself (exempt from the "
                         "feelings/presence lint); repeatable")
+    p.add_argument("--no-outside-facts", action="store_true", help=NO_FACTS_HELP)
     p.add_argument("--channel", choices=["fax", "email", "mail", "web_form"],
                    help="override the rep's default channel (e.g. Hoyle by mail)")
     p = sub.add_parser("queue"); p.add_argument("md")
+    p.add_argument("--no-outside-facts", action="store_true", help=NO_FACTS_HELP)
     p = sub.add_parser("status"); p.add_argument("id", type=int)
     p = sub.add_parser("log"); p.add_argument("--notes")
     args = parser.parse_args(argv)

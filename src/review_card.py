@@ -21,7 +21,9 @@ from pathlib import Path
 
 from src.config import load_user, local_setting
 from src.db import get_letter_by_id
+from src import fact_check
 from src.delivery.router import get_delivery_info
+from src.interpreter import split_footnotes
 
 PANTHEON = Path(local_setting("host_root", "PANTHEON_ROOT", "host-app"))
 REVIEW_DIR = PANTHEON / "notes" / "review"
@@ -150,6 +152,11 @@ def main(argv=None) -> int:
     ap.add_argument("--expires", required=True)
     ap.add_argument("--attach", action="store_true",
                     help="re-attach approve buttons (letters must be pending_approval)")
+    ap.add_argument("--claims", help="claims-and-sources JSON built BEFORE drafting (fact_check.py)")
+    ap.add_argument("--no-claims", metavar="WHY",
+                    help="no claims table: say why (e.g. the letter leans on no outside fact)")
+    ap.add_argument("--skip-fact-check", metavar="WHY",
+                    help="do not run the automatic fact check; the card says why")
     ap.add_argument("--not-duplicate-of", help="card the dedup guard matched, when this is a new subject")
     ap.add_argument("--why", help="one line: why it is not a duplicate (with --not-duplicate-of)")
     a = ap.parse_args(argv)
@@ -159,7 +166,28 @@ def main(argv=None) -> int:
     letters = [l for g in groups for l in g]
     if None in letters:
         raise SystemExit(f"unknown letter id in {a.ids}")
+    if bool(a.claims) == bool(a.no_claims):
+        raise SystemExit("give exactly one of --claims FILE or --no-claims WHY")
+    unsourced = [l["id"] for l in letters if not split_footnotes(l["body"])[1]]
+    if unsourced and not a.skip_fact_check:
+        raise SystemExit(f"letters {unsourced} have no Sources list; add footnotes first (#6825)")
     intro = Path(a.intro_file).read_text(encoding="utf-8") if a.intro_file else ""
+    sections = []
+    if a.claims:
+        try:
+            sections.append(fact_check.render_claims_section(
+                fact_check.check_claims(fact_check.load_claims(a.claims))))
+        except Exception as exc:  # advisory: say so on the card, never abort filing
+            sections.append("## Claims and sources (checked before drafting)\n\n"
+                            f"The claims table could not be checked ({type(exc).__name__}: "
+                            f"{exc}). Treat every outside fact in the letters as unchecked.")
+    if a.skip_fact_check:
+        sections.append(f"## Fact check (advisory)\n\nSkipped: {a.skip_fact_check}")
+    else:
+        result = fact_check.check_letters(letters)
+        sections.append(fact_check.render_fact_check_section(result))
+        a.title = fact_check.title_prefix(result) + a.title
+    intro = "\n\n".join(x for x in [intro.strip(), *sections] if x)
     common = common_paragraphs(groups)
     body = "\n---\n\n".join(
         build_card(g, intro if i == 0 else "", tag="S" if len(groups) == 1 else chr(65 + i),

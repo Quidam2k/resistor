@@ -33,6 +33,11 @@ def _body(extra: str = "") -> str:
             f"Sincerely,\n{u['name']}")
 
 
+def _sourced(body: str) -> str:
+    return body.replace("H.R. 6589.", "H.R. 6589 [1].", 1) + (
+        "\n\nSources\n[1] Congress.gov: congress.gov/bill/119th-congress/house-bill/6589")
+
+
 @pytest.fixture
 def recorder(monkeypatch):
     """Replace every sender with a recorder; any real HTTP POST fails the test."""
@@ -140,7 +145,7 @@ def test_queue_relint_honors_todd_authored_header(recorder, tmp_path):
     interpreter.main(["actions"])
     mine = "I am heartbroken."
     body_file = tmp_path / "body.txt"
-    body_file.write_text(_body(mine), encoding="utf-8")
+    body_file.write_text(_sourced(_body(mine)), encoding="utf-8")
     args = ["draft", "1", "--recipient", "Val Hoyle", "--channel", "fax",
             "--body-file", str(body_file)]
     assert interpreter.main(args) is None  # blocked without the override
@@ -157,7 +162,7 @@ def test_queue_relint_honors_todd_authored_header(recorder, tmp_path):
 def test_full_loop_sends_nothing_live(recorder, tmp_path):
     interpreter.main(["actions"])
     body_file = tmp_path / "body.txt"
-    body_file.write_text(_body(), encoding="utf-8")
+    body_file.write_text(_sourced(_body()), encoding="utf-8")
     md = interpreter.main(["draft", "1", "--recipient", "Val Hoyle",
                            "--channel", "mail", "--body-file", str(body_file)])
     assert md and "**Sources:** asks#" in md.read_text(encoding="utf-8")
@@ -244,6 +249,25 @@ def test_lint_sources_must_be_last_paragraph():
     body = _body("A claim [1].") + "\n\nSources\n[1] kfgo.com/x\n\nSincerely,\nTodd"
     prose, notes = interpreter.split_footnotes(body)
     assert notes == [] and "Sources" in prose
+
+
+def test_lint_requires_sources_list_when_asked():
+    errors, _ = interpreter.lint_letter(_body(), {"bills": []}, require_sources=True)
+    assert any("no Sources list" in e for e in errors)
+    errors, _ = interpreter.lint_letter(_sourced(_body()), {"bills": []}, require_sources=True)
+    assert not any("Sources" in e for e in errors)
+    errors, _ = interpreter.lint_letter(_body(), {"bills": []})  # off by default
+    assert errors == []
+
+
+def test_draft_without_sources_is_refused_unless_no_outside_facts(recorder, tmp_path):
+    interpreter.main(["actions"])
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(_body(), encoding="utf-8")
+    args = ["draft", "1", "--recipient", "Val Hoyle", "--channel", "fax",
+            "--body-file", str(body_file)]
+    assert interpreter.main(args) is None
+    assert interpreter.main(args + ["--no-outside-facts"]) is not None
 
 
 def test_lint_warns_on_reply_ask_without_channel():
