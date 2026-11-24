@@ -1,0 +1,54 @@
+# FARA priority flags for `python -m src.fara` (#6848). Todd edits this file.
+# The flag list is Todd's values list. It is NOT a finding about any filing: the second ranking column
+# (python -m src.fara ranking) orders every country by registrations with no values flag at all.
+values_flags:
+  - Israel
+  - Russia
+  - China
+  - North Korea
+  - Saudi Arabia
+  - Qatar
+  - United Arab Emirates
+  - Egypt
+  - Turkey
+  - Azerbaijan
+  - Iran
+# Removed 2026-11-24: Hungary. Orban lost the April 12 2026 election and conceded (CBS, PBS);
+# Peter Magyar was sworn in as prime minister on May 9 2026 (Al Jazeera, Euronews). Hungary stays in the ranking.
+
+# FARA writes country names in capitals, with its own spellings.
+country_aliases:
+  "RUSSIAN FEDERATION": Russia
+  "RUSSIA": Russia
+  "PEOPLE'S REPUBLIC OF CHINA": China
+  "CHINA, PEOPLE'S REPUBLIC OF": China
+  "PRC": China
+  "HONG KONG": Hong Kong
+  "KOREA, NORTH": North Korea
+  "KOREA (NORTH)": North Korea
+  "NORTH KOREA": North Korea
+  "DEMOCRATIC PEOPLE'S REPUBLIC OF KOREA": North Korea
+  "KOREA, SOUTH": South Korea
+  "KOREA (SOUTH)": South Korea
+  "REPUBLIC OF KOREA": South Korea
+  "SOUTH KOREA": South Korea
+  "UAE": United Arab Emirates
+  "UNITED ARAB EMIRATES": United Arab Emirates
+  "KSA": Saudi Arabia
+  "SAUDI ARABIA": Saudi Arabia
+  "TURKIYE": Turkey
+  "TURKEY": Turkey
+  "ISLAMIC REPUBLIC OF IRAN": Iran
+  "IRAN": Iran
+  "UNITED KINGDOM": United Kingdom
+  "UK": United Kingdom
+  "ENGLAND": United Kingdom
+  "USA": United States
+  "UNITED STATES": United States
+
+# ICC arrest-warrant tags: ONLY from the ICC's own site (icc-cpi.int), with the date we checked. Filled at build time.
+icc:
+  - {country: Israel, person: "Benjamin Netanyahu", warrant_issued: "2024-11-21", source_url: "https://www.icc-cpi.int/palestine", checked: "2026-11-24"}
+  - {country: Russia, person: "Vladimir Putin", warrant_issued: "2023-03-17", source_url: "https://www.icc-cpi.int/ukraine", checked: "2026-11-24"}
+
+iran_note: "Direct lobbying for Iran is sanctioned. A proxy is noted only if a filing names it; nothing is inferred."

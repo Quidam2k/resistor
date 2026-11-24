@@ -329,6 +329,10 @@ def _show(conn, rep, limit):
     from src import rep_trades
     print("-- stock-trade filings (python -m src.rep_trades show) --")
     rep_trades.show(conn, rep)
+    try:  # FARA filings that mention a federal rep (#14402); an optional block, so it never takes the record down
+        from src import fara
+        if fara.is_federal(rep): fara.show(conn, rep, limit=5)
+    except Exception as exc: print(f"-- FARA block unavailable: {exc} --")
 
 STOPWORDS = {"about", "with", "from", "that", "this", "their", "your", "letter", "follow", "support", "oppose"}
 
