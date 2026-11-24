@@ -7,6 +7,7 @@ in this module is ever "verified" the way a quote matched at its source is.
 import argparse, re, sqlite3, sys, time
 from datetime import datetime, timezone
 import requests
+from src import pac_groups
 from src.config import get_env, load_representatives
 from src.db import get_connection
 from src.http_cache import cached_get
@@ -146,7 +147,15 @@ def _url(kind, candidate, committee, cycle, extra=None):
     return f"https://www.fec.gov/data/receipts/individual-contributions/?committee_id={committee}&two_year_transaction_period={cycle}"
 
 
-def fetch_cycle(candidate, committees, cycle, last_name=""):
+def _race(rep, ballot_years=(), party=None):
+    """(office, district, state, ballot_years, party) for the group IE filter: 'S'/'H', zero-padded House district."""
+    house = rep.get("chamber_hint") == "House"
+    digits = re.sub(r"\D", "", str(rep.get("district") or ""))
+    if not rep.get("state"): raise RuntimeError(f"set state: in config for {rep['name']}")
+    return ("H" if house else "S", digits.zfill(2) if house and digits else None, rep["state"], set(ballot_years or ()), party)
+
+
+def fetch_cycle(candidate, committees, cycle, last_name="", race=("S", None, "OR", set(), None)):
     """All donor rows for one cycle: (kind, donor, amount, n, note, url)."""
     out = []
     for committee in committees:
@@ -154,6 +163,10 @@ def fetch_cycle(candidate, committees, cycle, last_name=""):
             out += [(*r[:5], _url(r[0], candidate, committee, cycle)) for r in rows]
     out += [(*r[:5], _url(r[0], candidate, None, cycle, r[5])) for r in _rows_leadership(candidate, cycle)]
     out += [(*r[:5], _url(r[0], candidate, None, cycle)) for r in _rows_outside(candidate, cycle)]
+    for key, group in pac_groups.load_groups().items():  # curated committee groups (#6847); same code for every group
+        out += pac_groups.group_rows(_get, key, group, committees, candidate, cycle, *race)
+        out += pac_groups.checked_rows(key, group, cycle)
+    out += pac_groups.dark_rows(_get, candidate, cycle)
     return out
 
 
@@ -177,19 +190,23 @@ def _recent(conn, rep):
 def refresh_rep(conn, rep, since_cycle=DEFAULT_SINCE_CYCLE, force=False):
     if _recent(conn, rep["name"]) and not force: return {"skipped": True}
     candidate = resolve_candidate_id(rep)
-    cycles = sorted(c for c in _get(f"candidate/{candidate}/").get("results", [{}])[0].get("cycles", [])
-                    if c >= since_cycle and c % 2 == 0)
+    cand = _get(f"candidate/{candidate}/").get("results", [{}])[0]
+    cycles = sorted(c for c in cand.get("cycles", []) if c >= since_cycle and c % 2 == 0)
+    race = _race(rep, cand.get("election_years"), cand.get("party"))
     totals = {t["cycle"]: t for t in _get(f"candidate/{candidate}/totals/", election_full="false", per_page=30).get("results", [])
               if t.get("cycle")}
     principal = _get(f"candidate/{candidate}/committees/", designation="P", per_page=20).get("results", [])
     have = {r[0] for r in conn.execute("SELECT cycle FROM rep_finance_totals WHERE rep=? UNION SELECT cycle FROM rep_donors WHERE rep=?",
                                        (rep["name"], rep["name"]))}
+    wanted = len(pac_groups.load_groups())  # a cycle counts as done only when every group's marker is there
+    marked = {r[0] for r in conn.execute("SELECT cycle FROM rep_donors WHERE rep=? AND kind='group_checked' GROUP BY cycle HAVING count(DISTINCT donor)>=?",
+                                         (rep["name"], wanted))}
     done, rows_total, errors = [], 0, []
     for cycle in cycles:
-        if cycle in have and cycle != cycles[-1] and not force: continue
+        if cycle in have and cycle in marked and cycle != cycles[-1] and not force: continue
         try:
             committees = [c["committee_id"] for c in principal if cycle in (c.get("cycles") or [])]
-            rows = fetch_cycle(candidate, committees, cycle, rep["name"].replace(" Jr.", "").split()[-1])
+            rows = fetch_cycle(candidate, committees, cycle, rep["name"].replace(" Jr.", "").split()[-1], race)
             t = totals.get(cycle)
             total = (_num(t.get("receipts")), _num(t.get("individual_itemized_contributions")),
                      _num(t.get("individual_unitemized_contributions")), _num(t.get("other_political_committee_contributions")),
@@ -197,7 +214,7 @@ def refresh_rep(conn, rep, since_cycle=DEFAULT_SINCE_CYCLE, force=False):
                      f"https://www.fec.gov/data/candidate/{candidate}/?cycle={cycle}") if t else None
             _store_cycle(conn, rep["name"], cycle, total, rows)
             done.append(f"{cycle}-12-31"); rows_total += len(rows)
-        except (requests.RequestException, KeyError, ValueError) as exc:
+        except (requests.RequestException, KeyError, ValueError) as exc:  # pac_groups.Truncated is a ValueError
             conn.rollback(); errors.append(f"{cycle}: {_safe(exc)}")
     # A weekly stamp only counts when nothing failed; otherwise the next run retries.
     if not errors: update_progress(conn, rep["name"], SOURCE, done, note=f"{rows_total} rows")
@@ -228,6 +245,8 @@ def show(conn, rep, limit=8):
                             (rep, t["cycle"], kind, limit)):
                 print(f"  {'pac (largest itemized receipts)' if kind == 'pac' else kind} | {d['donor']}{' (' + d['note'] + ')' if d['note'] else ''} | {_money(d['amount'])} | n={d['n']}")
     print(footer)
+    if label == "FEC-reported":
+        for line in pac_groups.summary_lines(conn, rep, pac_groups.load_groups()): print(line)
 
 
 def _has_word(low, word):
@@ -279,7 +298,7 @@ def donor_context(conn, rep, topic, limit=2):
     if not words: return []
     where = " OR ".join("lower(donor) LIKE ?" for _ in words)
     try:
-        rows = _dicts(conn, f"SELECT * FROM rep_donors WHERE rep=? AND kind != 'size' AND ({where}) "
+        rows = _dicts(conn, f"SELECT * FROM rep_donors WHERE rep=? AND kind IN ('employer','pac','leadership_pac','outside_spend') AND ({where}) "
                             "ORDER BY cycle DESC, amount DESC LIMIT ?", (rep, *[f"%{w}%" for w in words], limit))
     except sqlite3.OperationalError: return []
     return [dict(kind="donor", date=f"{r['cycle']}-12-31", label="FEC-reported",
@@ -295,11 +314,19 @@ def main(argv=None):
     refresh.add_argument("--since-cycle", type=int, default=DEFAULT_SINCE_CYCLE)
     for name in ("show", "conflicts"): sub.add_parser(name).add_argument("rep")
     sub.choices["show"].add_argument("--limit", type=int, default=8)
+    group = sub.add_parser("group", help="FEC-reported money from a curated committee group, e.g. israel")
+    group.add_argument("name"); group.add_argument("rep")
+    sub.add_parser("israel", help="alias for: group israel <rep>").add_argument("rep")
     args = parser.parse_args(argv)
     conn = get_connection()
     try:
         ensure_schema(conn); conn.commit()
-        if args.command == "show": show(conn, args.rep, args.limit)
+        if args.command in ("group", "israel"):
+            key = getattr(args, "name", "israel"); groups = pac_groups.load_groups()
+            if key not in groups: parser.error(f"unknown group {key!r}; have: {', '.join(groups)}")
+            print(chr(10).join(pac_groups.report_lines(conn, args.rep, key, groups[key])))
+            print(chr(10) + "Same rep, other top sectors (keyword heuristics, FEC-reported):"); conflicts(conn, args.rep)
+        elif args.command == "show": show(conn, args.rep, args.limit)
         elif args.command == "conflicts": conflicts(conn, args.rep)
         else:
             reps = [r for r in iter_reps(load_representatives()) if r["chamber_hint"] in {"Senate", "House"}

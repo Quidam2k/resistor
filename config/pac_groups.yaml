@@ -1,0 +1,31 @@
+# Curated committee groups for the donors view (rep_donors `group`, #6847).
+# The committee ids are FEC ids, each confirmed against api.open.fec.gov /committees/ on 2026-11-24.
+# Group membership is OUR list (the committee's stated purpose), not an FEC classification; the output says so.
+# Committees only, never individuals. Add a group here and the same code and wording apply to it.
+groups:
+  israel:
+    label: "Pro-Israel advocacy committees"
+    footer_extra: >-
+      AIPAC itself does not give directly: AIPAC PAC gifts and gifts earmarked through it are shown, and its
+      super PAC (United Democracy Project) shows up only as independent spending. Individual donors are not
+      labelled or counted. Dark-money groups are outside this list by definition.
+    categories:
+      direct: "Direct PAC / conduit"
+      ie: "Independent-expenditure committee"
+      separate: "J Street committees, shown separately"
+    committees:
+      - {id: C00797670, name: "AIPAC PAC (American Israel Public Affairs Committee PAC)", category: direct, conduit: true}
+      - {id: C00799031, name: "United Democracy Project (AIPAC-affiliated super PAC)", category: ie}
+      - {id: C00710848, name: "DMFI PAC (Democratic Majority for Israel)", category: direct, conduit: true}
+      - {id: C00699470, name: "Pro-Israel America PAC", category: direct, conduit: true}
+      - {id: C00740936, name: "Pro-Israel America Action Fund (super PAC)", category: ie}
+      - {id: C00247403, name: "NORPAC", category: direct, conduit: true}
+      - {id: C00139659, name: "Joint Action Committee for Political Affairs (JACPAC)", category: direct, conduit: true}
+      - {id: C00141747, name: "Friends of Israel PAC (FIPAC)", category: direct, conduit: true}
+      - {id: C00441949, name: "J Street PAC (JSTREETPAC)", category: separate, conduit: true}
+      - {id: C00815753, name: "J Street Action Fund (super PAC)", category: separate}
+    not_covered:
+      - "AIPAC bundling that is not earmarked (not visible in FEC data)"
+      - "Individual donors (we do not label people)"
+      - "Pro-Israel committees not on this list"
+      - "Groups that do not disclose donors (see the dark-money line)"

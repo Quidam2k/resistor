@@ -46,6 +46,7 @@ federal:
 
   house:
     - name: Val Hoyle
+      state: OR
       fec_candidate_id: H2OR04095  # FEC candidate id (rep_donors)
       party: D
       title: US Representative

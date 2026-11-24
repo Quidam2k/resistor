@@ -7,11 +7,11 @@ import requests
 
 from src import rep_donors, rep_record
 
-REP = {"name": "Test Senator", "chamber_hint": "Senate", "fec_candidate_id": "S0TEST"}
+REP = {"name": "Test Senator", "chamber_hint": "Senate", "fec_candidate_id": "S0TEST", "state": "OR"}
 
 
 def _fake_get(path, **params):
-    if path == "candidate/S0TEST/": return {"results": [{"cycles": [2022, 2024, 2025, 2026]}]}
+    if path == "candidate/S0TEST/": return {"results": [{"cycles": [2022, 2024, 2025, 2026], "election_years": [2024], "party": "DEM"}]}
     if path == "candidate/S0TEST/totals/":
         return {"results": [{"cycle": 2024, "receipts": 100.0, "individual_itemized_contributions": 60.0,
                              "individual_unitemized_contributions": 20.0, "other_political_committee_contributions": 10.0,
@@ -29,6 +29,7 @@ def _fake_get(path, **params):
             {"contributor_name": "ACTBLUE", "contribution_receipt_amount": 8000, "entity_type": "PAC"},
             {"contributor_name": "Some Corp", "contribution_receipt_amount": 700, "entity_type": "ORG"}],
             "pagination": {"last_indexes": {"last_index": "9", "last_contribution_receipt_amount": "700"}}}
+    if path == "schedules/schedule_e/": return {"results": []}
     if path == "committees/": return {"results": [{"committee_id": "C9", "name": "TEST LEADERSHIP PAC"}]}
     if path == "committee/C9/totals/": return {"results": [{"receipts": 123.0}]}
     if path == "schedules/schedule_e/by_candidate/":
@@ -59,6 +60,20 @@ def test_refresh_parses_and_filters(conn):
     assert _rows(conn, "outside_spend")["OUTSIDE GROUP"]["note"] == "oppose"
     total = conn.execute("SELECT * FROM rep_finance_totals WHERE rep=? AND cycle=2024", (REP["name"],)).fetchone()
     assert (total["receipts"], total["pac_contributions"], total["coverage_end"]) == (100.0, 10.0, "2024-12-31")
+
+
+def test_group_marker_stored_and_donor_context_ignores_group_kinds(conn):
+    rep_donors.refresh_rep(conn, dict(REP), since_cycle=2024, force=True)
+    assert conn.execute("SELECT count(*) FROM rep_donors WHERE kind='group_checked' AND donor='israel' AND cycle=2024").fetchone()[0] == 1
+    conn.execute("INSERT INTO rep_donors (rep, cycle, kind, donor, amount, n, note, url, fetched_at) "
+                 "VALUES (?,?,?,?,?,?,?,?,?)", (REP["name"], 2024, "israel_pac", "Pro-Israel Test PAC", 5.0, 1, "direct", "u", "t"))
+    assert rep_donors.donor_context(conn, REP["name"], "israel") == []  # no KeyError on kinds without letter phrasing
+
+
+def test_race_pads_house_district():
+    assert rep_donors._race({"name": "x", "chamber_hint": "House", "district": "OR-4", "state": "OR"}, [2022], "DEM") == ("H", "04", "OR", {2022}, "DEM")
+    assert rep_donors._race({"name": "x", "chamber_hint": "Senate", "state": "OR"})[:3] == ("S", None, "OR")
+    with pytest.raises(RuntimeError): rep_donors._race({"name": "x", "chamber_hint": "Senate"})
 
 
 def test_refetch_replaces_rather_than_duplicates(conn):
