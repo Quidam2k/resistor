@@ -197,3 +197,19 @@ def test_short_page_does_not_skip_rows():
             return FakeResp(payload={"recordsFiltered": 3, "data": ROWS[start:start + 2]})  # server caps pages at 2
     rows = rep_trades._efd_rows(Paged(), SENATOR, 2025)
     assert len(rows) == 3
+
+
+def test_changed_agreement_text_is_appended_not_overwritten(tmp_path):
+    first = rep_trades.write_agreement_doc("OLD 105(c)", root=tmp_path)
+    assert rep_trades.write_agreement_doc("OLD 105(c)", root=tmp_path) == first
+    rep_trades.write_agreement_doc("NEW 105(c)", root=tmp_path)
+    body = first.read_text(encoding="utf-8")
+    assert "OLD 105(c)" in body and "NEW 105(c)" in body and "First accepted" in body
+
+
+def test_missing_csrf_is_a_senator_error_not_a_crash(conn):
+    class NoCsrf(FakeSession):
+        def __init__(self): super().__init__(); self.cookies = {}
+        def get(self, url, **kw): return FakeResp("<html></html>", url)
+    result = rep_trades.refresh_senate_rep(conn, dict(SENATOR), NoCsrf(), force=True)
+    assert result["errors"]

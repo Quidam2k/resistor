@@ -206,7 +206,7 @@ def refresh_senate_rep(conn, rep, session, since_year=DEFAULT_SINCE_YEAR, force=
     name = rep["name"]
     if _recent(conn, name, SENATE_SOURCE) and not force: return {"skipped": True}
     try: found = parse_efd_rows(_efd_rows(session, rep, since_year), rep)
-    except (requests.RequestException, ValueError, KeyError, TypeError) as exc:  # never write a partial picture
+    except (requests.RequestException, RuntimeError, ValueError, KeyError, TypeError) as exc:  # never write a partial picture
         return {"errors": [str(exc)]}
     stamp, this_year = _now(), datetime.now().year
     for fid, year, filed, url in found:
@@ -219,20 +219,26 @@ def refresh_senate_rep(conn, rep, session, since_year=DEFAULT_SINCE_YEAR, force=
 
 
 def write_agreement_doc(text, root=None):
-    """Keep the verbatim agreement + acceptance date in the repo. Called only AFTER the acceptance POST succeeded."""
+    """Keep the verbatim agreement + acceptance date in the repo. Called only AFTER the acceptance POST succeeded.
+    The first acceptance date is never overwritten; a changed (but still 105(c)) text is appended with its own date."""
     from pathlib import Path
     path = Path(root or Path(__file__).resolve().parent.parent) / AGREEMENT_DOC
-    if path.exists() and text in path.read_text(encoding="utf-8"): return path
+    stamp = (f"accepted: {datetime.now().strftime('%Y-%m-%d')} by script (scripts/senate_efd_refresh.py), "
+             f"at the owner's direction (msgs 67415, 67451).\n\n> {text}\n")
+    if path.exists():
+        body = path.read_text(encoding="utf-8")
+        if text in body: return path
+        path.write_text(body + f"\n## Agreement text changed (still passes the 105(c) check)\nRe-{stamp}", encoding="utf-8")
+        return path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "# Senate eFD use agreement\n\n"
         f"Source: {EFD_HOST}/search/home/ (verbatim, fetched at acceptance)\n"
-        f"First accepted: {datetime.now().strftime('%Y-%m-%d')} by script (scripts/senate_efd_refresh.py), at Todd's direction (msgs 67415, 67451).\n\n"
-        f"> {text}\n\n"
+        f"First {stamp}\n"
         "## Scope of use here\n"
         "Constituent letters and `rep_record show` only. Rows carry use_flag=constituent_letters_only and are read only through "
         "`rep_trades.read_rows(..., purpose='constituent_letter')`, which refuses any other purpose. Never for fundraising or "
-        "donation asks, credit rating, or anything for Todd's shop or Third Wish.\n"
+        "donation asks, credit rating, or anything for the owner's shop or Third Wish.\n"
         "Stop rule: if the agreement text stops matching 105(c), or the scripted acceptance is blocked, stop and report; no workaround.\n",
         encoding="utf-8")
     return path
