@@ -23,6 +23,11 @@ echo --- backfill-votes %TIME% >> "%LOG%"
 "%RESISTOR_PYTHON%" -m src.rep_record backfill-votes >> "%LOG%" 2>&1
 echo exit %ERRORLEVEL% >> "%LOG%"
 
+rem FEC donors: rep_donors keeps its own 7-day gate per rep, so this is a no-op on most nights (#6815).
+echo --- donors (FEC, weekly gate) %TIME% >> "%LOG%"
+"%RESISTOR_PYTHON%" -m src.rep_donors refresh >> "%LOG%" 2>&1
+echo exit %ERRORLEVEL% >> "%LOG%"
+
 if defined RESISTOR_YOUTUBE_ROOT (
   echo --- youtube captions %TIME% >> "%LOG%"
   "%RESISTOR_PYTHON%" -m src.rep_youtube >> "%LOG%" 2>&1
@@ -39,4 +44,6 @@ echo exit %ERRORLEVEL% >> "%LOG%"
 echo --- progress summary %TIME% >> "%LOG%"
 "%RESISTOR_PYTHON%" -m src.rep_record progress 2>&1 | findstr /C:"all sources" >> "%LOG%"
 echo ==== daily refresh end %DATE% %TIME% >> "%LOG%"
+rem Stamp read by `rep_record progress`, which warns when it is older than 36 h (#6815).
+echo %DATE% %TIME% > data\logs\last_sweep.txt
 endlocal

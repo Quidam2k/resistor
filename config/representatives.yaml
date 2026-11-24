@@ -9,6 +9,7 @@
 federal:
   senators:
     - name: Ron Wyden
+      fec_candidate_id: S6OR00110  # FEC candidate id (rep_donors)
       party: D
       title: US Senator
       contact_url: https://www.wyden.senate.gov/contact
@@ -25,6 +26,7 @@ federal:
       youtube_slugs: ["ron-wyden"]  # official channel, captions via Pantheon youtube_watch
 
     - name: Jeff Merkley
+      fec_candidate_id: S8OR00207  # FEC candidate id (rep_donors)
       party: D
       title: US Senator
       contact_url: https://www.merkley.senate.gov/contact
@@ -42,6 +44,7 @@ federal:
 
   house:
     - name: Val Hoyle
+      fec_candidate_id: H2OR04095  # FEC candidate id (rep_donors)
       party: D
       title: US Representative
       district: "OR-4"

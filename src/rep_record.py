@@ -8,7 +8,7 @@ from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 import requests
-from src.config import load_representatives
+from src.config import DATA_DIR, load_representatives
 from src.db import get_connection
 from src.http_cache import cached_get
 PACE_SECONDS = 1.0
@@ -40,6 +40,8 @@ def ensure_schema(conn):
     columns = {row[1] for row in conn.execute("PRAGMA table_info(voting_records)")}
     for column in ("roll_url", "question"):
         if column not in columns: conn.execute(f"ALTER TABLE voting_records ADD COLUMN {column} TEXT")
+    from src import rep_donors  # lazy: rep_donors imports this module
+    rep_donors.ensure_schema(conn)
 def update_progress(conn, rep, source, dates: list[str], cursor=None, exhausted=None, note=None):
     valid = [d for d in dates if d]
     conn.execute("""
@@ -320,6 +322,10 @@ def _show(conn, rep, limit):
         print(f"{row['date']} | {row['bill_id']} ({row['role']}) | {row['title']} | {row['url']}")
     for row in _dicts(conn, "SELECT * FROM voting_records WHERE representative=? ORDER BY vote_date DESC, id DESC LIMIT ?", (rep, limit)):
         print(f"{row['vote_date']} | {row['bill_id'] or ''} | {row['vote']} | {row['question'] or row['bill_title'] or ''} | {row['roll_url'] or row['source_url'] or ''}")
+    from src import rep_donors
+    if conn.execute("SELECT 1 FROM rep_finance_totals WHERE rep=? LIMIT 1", (rep,)).fetchone():
+        print("-- donors (FEC-reported; full view: python -m src.rep_donors show/conflicts) --")
+        rep_donors.show(conn, rep, limit=3)
 
 STOPWORDS = {"about", "with", "from", "that", "this", "their", "your", "letter", "follow", "support", "oppose"}
 
@@ -359,6 +365,8 @@ def record_context(conn, rep, topic, limit=2):
         what = " ".join(x for x in (row["bill_id"], (row["bill_title"] or "")[:160], f"({row['question']})" if row["question"] else "") if x)
         items.append(dict(kind="vote", date=row["vote_date"][:10], label="verified",
                           text=f"voted {row['vote']} on {what}", url=row["roll_url"] or row["source_url"]))
+    from src import rep_donors
+    items += rep_donors.donor_context(conn, rep, topic, limit)
     return items
 
 def record_items(rep, topic):
@@ -374,14 +382,27 @@ def record_items(rep, topic):
 def format_record_context(items):
     return [f"- {i['date']} [{i['label']}] {i['text']} (source: {i['url']})" for i in items]
 
+SWEEP_STAMP = DATA_DIR / "logs" / "last_sweep.txt"
+SWEEP_STALE_HOURS = 36
+
+def sweep_warning(now=None):
+    """A line saying the nightly sweep is overdue (or never finished), else None. daily_refresh.bat writes the stamp last."""
+    now = now or time.time()
+    if not SWEEP_STAMP.exists(): return "STALE: no completed nightly sweep on record (data/logs/last_sweep.txt missing)"
+    hours = (now - SWEEP_STAMP.stat().st_mtime) / 3600
+    return f"STALE: last completed nightly sweep was {hours:.0f}h ago (limit {SWEEP_STALE_HOURS}h); check Task Scheduler ResistorDailyRefresh" if hours > SWEEP_STALE_HOURS else None
+
 def _progress(conn, reps):
+    warning = sweep_warning()
+    if warning: print(warning)
     for rep in reps:
         rows = _dicts(conn, "SELECT * FROM backfill_progress WHERE rep=? ORDER BY source", (rep["name"],))
         sources = {"statements:" + f["kind"] for f in rep["feeds"] if f.get("kind") in {"rss", "listing"}}
         hint = rep["chamber_hint"]
         if hint in {"Senate", "House"}:
             sources.update(("bills:congress-sponsor", "bills:congress-cosponsor",
-                            "votes:voteview-senate" if hint == "Senate" else "votes:congress-house", "statements:crec"))
+                            "votes:voteview-senate" if hint == "Senate" else "votes:congress-house", "statements:crec",
+                            "donors:fec"))
         elif rep["or_code"]: sources.update(("bills:oregon", "votes:oregon"))
         known = {r["source"] for r in rows}
         rows += [dict(source=s, oldest_date=None, items=0, exhausted=0, note="") for s in sources - known]
