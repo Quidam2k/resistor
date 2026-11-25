@@ -149,3 +149,38 @@ def test_model_text_cannot_declare_safe_to_send():
     text = fc.render_fact_check_section(res)
     assert "[phrase removed] / really" in text
     assert text.lower().count("safe to send") == 1  # only the advisory footer's own wording
+
+
+# #14868: a batch's merged text names who each letter is addressed to
+def test_review_text_labels_each_letter_and_keeps_shared_first():
+    text = fc.review_text([letter(1, "Wyden own."), letter(2, "Hoyle own.")], USER)
+    assert text.startswith("Spain approved a draft decree.")
+    assert text.count("Spain approved a draft decree.") == 1
+    one, two = "(The following letter is addressed to Senator 1.)", "(The following letter is addressed to Senator 2.)"
+    assert text.index(one) < text.index("Wyden own.") < text.index(two) < text.index("Hoyle own.")
+
+
+def test_review_text_single_letter_has_no_label():
+    assert "addressed to" not in fc.review_text([letter(1, "Own.")], USER)
+
+
+def test_review_text_paragraph_in_some_letters_appears_under_each():
+    text = fc.review_text([letter(1, "Both."), letter(2, "Both."), letter(3, "Other.")], USER)
+    assert text.count("Both.") == 2
+
+
+def test_misattributed_quote_is_still_contradicted_with_labels():
+    """Karen's negative case: a quote credited to the wrong rep must still be flagged."""
+    seen = {}
+
+    def run(kind, prompt):
+        seen["prompt"] = prompt
+        label = prompt.rfind("addressed to Senator 2", 0, prompt.find("you said public lands"))
+        verdict = "CONTRADICTED" if label >= 0 else "SUPPORTED"  # source: Senator 1 said it
+        return True, json.dumps({"claims": [{"sentence": 1, "claim": "In May you said public lands are ours.",
+                                             "verdict": verdict, "source": 1, "quote": "", "note": ""}]})
+    res = fc.check_letters([letter(1, "Thanks."), letter(2, "In May you said public lands are ours [1].")],
+                           runner=run, fetch=fetch_ok, user=USER)
+    p = seen["prompt"]
+    assert p.index("addressed to Senator 1.)") < p.index("addressed to Senator 2.)") < p.index("In May you said")
+    assert res["contradicted"] is True and fc.title_prefix(res) == "CHECK: "

@@ -157,13 +157,23 @@ def review_text(letters: list[dict], user: Any) -> str:
         return ""
     shared = [p for p in dict.fromkeys(per[0]) if all(p in other for other in per)]
     out = list(shared)
+    if len(letters) > 1:  # #14868: without a label, one rep's "you said" reads as another's
+        for L, paras in zip(letters, per):
+            out.append(f"(The following letter is addressed to {_addressee(L)}.)")
+            out += [p for p in dict.fromkeys(paras) if p not in shared]
+        return "\n\n".join(out)
     seen = set(out)
-    for paras in per:
-        for p in paras:
-            if p not in seen:
-                seen.add(p)
-                out.append(p)
+    for p in per[0]:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
     return "\n\n".join(out)
+
+
+def _addressee(letter: dict) -> str:
+    """'Senator Wyden' from the greeting (title matters: House votes vs Senate votes), else the recipient."""
+    m = re.search(r"^Dear (.+?),\s*$", str(letter.get("body", "")), flags=re.M)
+    return m.group(1) if m else str(letter.get("recipient") or "an unnamed recipient")
 
 
 def _sev(v: str) -> int:
